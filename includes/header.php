@@ -28,6 +28,11 @@ $flashMessages = get_flash_messages();
     <link href="/assets/css/style.css" rel="stylesheet">
 </head>
 <body class="portal-body">
+    <title><?= h($pageTitle) ?> - <?= h(APP_NAME) ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/style.css" rel="stylesheet">
+</head>
+<body>
 <?php if (is_logged_in()): ?>
 <div class="app-shell d-flex">
     <?php require BASE_PATH . '/includes/sidebar.php'; ?>
@@ -55,4 +60,19 @@ $flashMessages = get_flash_messages();
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         <?php endforeach; ?>
+        <div class="container-fluid py-4">
+            <?php foreach ($flashMessages as $flash): ?>
+                <div class="alert alert-<?= h($flash['type']) ?> alert-dismissible fade show" role="alert">
+                    <?= h($flash['message']) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endforeach; ?>
+<?php else: ?>
+<div class="container py-5">
+    <?php foreach ($flashMessages as $flash): ?>
+        <div class="alert alert-<?= h($flash['type']) ?> alert-dismissible fade show" role="alert">
+            <?= h($flash['message']) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endforeach; ?>
 <?php endif; ?>
