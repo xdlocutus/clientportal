@@ -45,6 +45,8 @@ body.portal-body {
 body.portal-body a {
     text-decoration-thickness: 0.08em;
     text-underline-offset: 0.18em;
+body {
+    background: #f5f7fb;
 }
 
 .app-shell {
@@ -118,6 +120,17 @@ body.portal-body a {
 
 .sidebar-footer {
     border-top: 1px solid rgba(255, 255, 255, 0.08);
+    width: 260px;
+    min-height: 100vh;
+}
+
+.sidebar .nav-link {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+}
+
+.sidebar .nav-link:hover {
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .app-content {
@@ -331,4 +344,8 @@ textarea {
     .topbar-panel {
         padding: 1rem 1.1rem;
     }
+.card-stat {
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: 0 0.25rem 1rem rgba(31, 45, 61, 0.08);
 }

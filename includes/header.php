@@ -7,7 +7,6 @@ require_once BASE_PATH . '/includes/auth.php';
 
 $pageTitle = $pageTitle ?? APP_NAME;
 $flashMessages = get_flash_messages();
-$isLoggedIn = is_logged_in();
 ?>
 <!doctype html>
 <html lang="en">
@@ -29,19 +28,24 @@ $isLoggedIn = is_logged_in();
     <link href="/assets/css/style.css" rel="stylesheet">
 </head>
 <body class="portal-body">
-<?php if ($isLoggedIn) { ?>
+    <title><?= h($pageTitle) ?> - <?= h(APP_NAME) ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+<?php if (is_logged_in()): ?>
 <div class="app-shell d-flex">
     <?php require BASE_PATH . '/includes/sidebar.php'; ?>
     <main class="app-content flex-grow-1">
         <?php require BASE_PATH . '/includes/topbar.php'; ?>
         <div class="container-fluid py-4 py-lg-5 px-4 px-lg-5">
-            <?php foreach ($flashMessages as $flash) { ?>
+            <?php foreach ($flashMessages as $flash): ?>
                 <div class="alert alert-<?= h($flash['type']) ?> alert-dismissible fade show modern-alert" role="alert">
                     <?= h($flash['message']) ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-            <?php } ?>
-<?php } else { ?>
+            <?php endforeach; ?>
+<?php else: ?>
 <div class="theme-toggle-floating">
     <button type="button" class="btn btn-outline-secondary theme-toggle-btn" data-theme-toggle aria-label="Toggle color theme">
         <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
@@ -50,10 +54,25 @@ $isLoggedIn = is_logged_in();
 </div>
 <div class="auth-shell">
     <div class="container py-5">
-        <?php foreach ($flashMessages as $flash) { ?>
+        <?php foreach ($flashMessages as $flash): ?>
             <div class="alert alert-<?= h($flash['type']) ?> alert-dismissible fade show modern-alert" role="alert">
                 <?= h($flash['message']) ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-        <?php } ?>
-<?php } ?>
+        <?php endforeach; ?>
+        <div class="container-fluid py-4">
+            <?php foreach ($flashMessages as $flash): ?>
+                <div class="alert alert-<?= h($flash['type']) ?> alert-dismissible fade show" role="alert">
+                    <?= h($flash['message']) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endforeach; ?>
+<?php else: ?>
+<div class="container py-5">
+    <?php foreach ($flashMessages as $flash): ?>
+        <div class="alert alert-<?= h($flash['type']) ?> alert-dismissible fade show" role="alert">
+            <?= h($flash['message']) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endforeach; ?>
+<?php endif; ?>

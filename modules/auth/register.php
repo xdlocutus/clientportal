@@ -114,6 +114,48 @@ require BASE_PATH . '/includes/header.php';
                     <a class="btn btn-link" href="/modules/auth/login.php">Back to login</a>
                 </div>
             </form>
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h1 class="h3 mb-3">Client Registration</h1>
+                <form method="post" class="row g-3">
+                    <?= csrf_field() ?>
+                    <div class="col-md-6">
+                        <label class="form-label">Company / Tenant</label>
+                        <select name="company_id" class="form-select" required>
+                            <option value="">Select company</option>
+                            <?php foreach ($companies as $company): ?>
+                                <option value="<?= (int) $company['id'] ?>"><?= h($company['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Your Company Name</label>
+                        <input type="text" name="company_name" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="full_name" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Phone</label>
+                        <input type="text" name="phone" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-primary" type="submit">Register</button>
+                        <a class="btn btn-link" href="/modules/auth/login.php">Back to login</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
