@@ -60,6 +60,60 @@ if (is_post()) {
 $pageTitle = 'Register';
 require BASE_PATH . '/includes/header.php';
 ?>
+<div class="row align-items-center g-4 justify-content-center">
+    <div class="col-lg-5">
+        <div class="auth-feature">
+            <div class="auth-kicker">Self-service onboarding</div>
+            <h1 class="display-6 fw-bold mb-3">Create a client portal account in minutes.</h1>
+            <p class="lead text-body-secondary mb-0">Submit your company details, choose the tenant you belong to, and get access to invoices and support tickets.</p>
+            <ul class="auth-feature-list">
+                <li><span>✓</span><div><strong>Secure authentication</strong><div class="text-body-secondary">Passwords are hashed and sessions are regenerated on sign-in.</div></div></li>
+                <li><span>✓</span><div><strong>Client-only visibility</strong><div class="text-body-secondary">Registered clients only see their own invoices and tickets.</div></div></li>
+                <li><span>✓</span><div><strong>Designed for growth</strong><div class="text-body-secondary">Modular pages make future portal expansion straightforward.</div></div></li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-lg-6 col-xl-5">
+        <div class="auth-panel">
+            <div class="auth-kicker mb-2">Client access</div>
+            <h2 class="h3 mb-1">Register</h2>
+            <p class="text-body-secondary mb-4">Complete the form below to request portal access.</p>
+            <form method="post" class="row g-3">
+                <?= csrf_field() ?>
+                <div class="col-md-6">
+                    <label class="form-label">Company / Tenant</label>
+                    <select name="company_id" class="form-select" required>
+                        <option value="">Select company</option>
+                        <?php foreach ($companies as $company): ?>
+                            <option value="<?= (int) $company['id'] ?>"><?= h($company['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Your Company Name</label>
+                    <input type="text" name="company_name" class="form-control" autocomplete="organization" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" name="full_name" class="form-control" autocomplete="name" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Phone</label>
+                    <input type="text" name="phone" class="form-control" autocomplete="tel">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control" autocomplete="email" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="password" class="form-control" autocomplete="new-password" required>
+                </div>
+                <div class="col-12 d-flex flex-wrap gap-2 pt-2">
+                    <button class="btn btn-primary px-4" type="submit">Register</button>
+                    <a class="btn btn-link" href="/modules/auth/login.php">Back to login</a>
+                </div>
+            </form>
 <div class="row justify-content-center">
     <div class="col-lg-7">
         <div class="card shadow-sm border-0">
