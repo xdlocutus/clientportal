@@ -13,10 +13,12 @@ $flashMessages = get_flash_messages();
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
     <title><?= h($pageTitle) ?> - <?= h(APP_NAME) ?></title>
     <script>
         (() => {
-            const storedTheme = localStorage.getItem('business-portal-theme');
+            const themeKey = 'business-portal-theme';
+            const storedTheme = localStorage.getItem(themeKey);
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const theme = storedTheme || (prefersDark ? 'dark' : 'light');
             document.documentElement.setAttribute('data-bs-theme', theme);
@@ -35,7 +37,7 @@ $flashMessages = get_flash_messages();
             <?php foreach ($flashMessages as $flash): ?>
                 <div class="alert alert-<?= h($flash['type']) ?> alert-dismissible fade show modern-alert" role="alert">
                     <?= h($flash['message']) ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             <?php endforeach; ?>
 <?php else: ?>
@@ -50,7 +52,7 @@ $flashMessages = get_flash_messages();
         <?php foreach ($flashMessages as $flash): ?>
             <div class="alert alert-<?= h($flash['type']) ?> alert-dismissible fade show modern-alert" role="alert">
                 <?= h($flash['message']) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         <?php endforeach; ?>
 <?php endif; ?>

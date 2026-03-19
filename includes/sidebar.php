@@ -2,14 +2,14 @@
 <?php
 $currentPath = $_SERVER['SCRIPT_NAME'] ?? '';
 $navItems = [
-    ['label' => 'Dashboard', 'href' => '/modules/dashboard/index.php', 'icon' => '🏠', 'show' => true],
-    ['label' => 'Companies', 'href' => '/modules/companies/index.php', 'icon' => '🏢', 'show' => is_super_admin()],
-    ['label' => 'Users', 'href' => '/modules/users/index.php', 'icon' => '👥', 'show' => has_role(['super_admin', 'company_admin'])],
-    ['label' => 'Clients', 'href' => '/modules/clients/index.php', 'icon' => '🤝', 'show' => has_role(['super_admin', 'company_admin', 'company_staff'])],
-    ['label' => 'Services', 'href' => '/modules/services/index.php', 'icon' => '🧩', 'show' => has_role(['super_admin', 'company_admin', 'company_staff'])],
-    ['label' => 'Invoices', 'href' => '/modules/invoices/index.php', 'icon' => '🧾', 'show' => true],
-    ['label' => 'Tickets', 'href' => '/modules/tickets/index.php', 'icon' => '🎫', 'show' => true],
-    ['label' => 'Settings', 'href' => '/modules/settings/index.php', 'icon' => '⚙️', 'show' => !is_client_role()],
+    ['label' => 'Dashboard', 'href' => '/modules/dashboard/index.php', 'match' => '/modules/dashboard/', 'icon' => '🏠', 'show' => true],
+    ['label' => 'Companies', 'href' => '/modules/companies/index.php', 'match' => '/modules/companies/', 'icon' => '🏢', 'show' => is_super_admin()],
+    ['label' => 'Users', 'href' => '/modules/users/index.php', 'match' => '/modules/users/', 'icon' => '👥', 'show' => has_role(['super_admin', 'company_admin'])],
+    ['label' => 'Clients', 'href' => '/modules/clients/index.php', 'match' => '/modules/clients/', 'icon' => '🤝', 'show' => has_role(['super_admin', 'company_admin', 'company_staff'])],
+    ['label' => 'Services', 'href' => '/modules/services/index.php', 'match' => '/modules/services/', 'icon' => '🧩', 'show' => has_role(['super_admin', 'company_admin', 'company_staff'])],
+    ['label' => 'Invoices', 'href' => '/modules/invoices/index.php', 'match' => '/modules/invoices/', 'icon' => '🧾', 'show' => true],
+    ['label' => 'Tickets', 'href' => '/modules/tickets/index.php', 'match' => '/modules/tickets/', 'icon' => '🎫', 'show' => true],
+    ['label' => 'Settings', 'href' => '/modules/settings/index.php', 'match' => '/modules/settings/', 'icon' => '⚙️', 'show' => !is_client_role()],
 ];
 ?>
 <aside class="sidebar p-3 p-lg-4">
@@ -22,21 +22,23 @@ $navItems = [
             </span>
         </a>
     </div>
+
     <div class="sidebar-section-label">Navigation</div>
     <nav class="nav flex-column gap-2">
         <?php foreach ($navItems as $item): ?>
             <?php if (!$item['show']) { continue; } ?>
-            <?php $active = str_starts_with($currentPath, dirname($item['href'])) ? ' active' : ''; ?>
+            <?php $active = str_contains($currentPath, $item['match']) ? ' active' : ''; ?>
             <a class="nav-link sidebar-link<?= $active ?>" href="<?= h($item['href']) ?>">
-                <span class="sidebar-icon"><?= $item['icon'] ?></span>
+                <span class="sidebar-icon" aria-hidden="true"><?= $item['icon'] ?></span>
                 <span><?= h($item['label']) ?></span>
             </a>
         <?php endforeach; ?>
     </nav>
+
     <div class="sidebar-footer mt-auto pt-4">
         <div class="small text-body-secondary mb-2">Signed in as</div>
         <div class="fw-semibold"><?= h(current_user()['full_name'] ?? '') ?></div>
-        <div class="small text-body-secondary mb-3"><?= h(current_user()['email'] ?? '') ?></div>
+        <div class="small text-body-secondary mb-3 text-break"><?= h(current_user()['email'] ?? '') ?></div>
         <a class="btn btn-outline-secondary w-100" href="/modules/auth/logout.php">Logout</a>
     </div>
 </aside>

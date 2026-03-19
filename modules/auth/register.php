@@ -91,23 +91,23 @@ require BASE_PATH . '/includes/header.php';
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Your Company Name</label>
-                    <input type="text" name="company_name" class="form-control" required>
+                    <input type="text" name="company_name" class="form-control" autocomplete="organization" required>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Full Name</label>
-                    <input type="text" name="full_name" class="form-control" required>
+                    <input type="text" name="full_name" class="form-control" autocomplete="name" required>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Phone</label>
-                    <input type="text" name="phone" class="form-control">
+                    <input type="text" name="phone" class="form-control" autocomplete="tel">
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Email</label>
-                    <input type="email" name="email" class="form-control" required>
+                    <input type="email" name="email" class="form-control" autocomplete="email" required>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Password</label>
-                    <input type="password" name="password" class="form-control" required>
+                    <input type="password" name="password" class="form-control" autocomplete="new-password" required>
                 </div>
                 <div class="col-12 d-flex flex-wrap gap-2 pt-2">
                     <button class="btn btn-primary px-4" type="submit">Register</button>

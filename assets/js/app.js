@@ -1,4 +1,5 @@
 const THEME_KEY = 'business-portal-theme';
+const colorSchemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
 
 const getPreferredTheme = () => {
     const storedTheme = localStorage.getItem(THEME_KEY);
@@ -6,7 +7,7 @@ const getPreferredTheme = () => {
         return storedTheme;
     }
 
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return colorSchemeMedia.matches ? 'dark' : 'light';
 };
 
 const applyTheme = (theme) => {
@@ -26,6 +27,7 @@ const applyTheme = (theme) => {
         }
 
         button.setAttribute('data-next-theme', nextTheme);
+        button.setAttribute('title', `Switch to ${nextTheme} mode`);
     });
 };
 
@@ -39,11 +41,13 @@ document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
     });
 });
 
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if (!localStorage.getItem(THEME_KEY)) {
-        applyTheme(getPreferredTheme());
-    }
-});
+if (typeof colorSchemeMedia.addEventListener === 'function') {
+    colorSchemeMedia.addEventListener('change', () => {
+        if (!localStorage.getItem(THEME_KEY)) {
+            applyTheme(getPreferredTheme());
+        }
+    });
+}
 
 document.querySelectorAll('[data-confirm]').forEach((element) => {
     element.addEventListener('click', (event) => {

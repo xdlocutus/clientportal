@@ -51,15 +51,17 @@ require BASE_PATH . '/includes/header.php';
                 <?= csrf_field() ?>
                 <div class="mb-3">
                     <label class="form-label">Email</label>
-                    <input type="email" name="email" class="form-control" placeholder="name@company.com" required>
+                    <input type="email" name="email" class="form-control" placeholder="name@company.com" autocomplete="email" required>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Password</label>
-                    <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                    <input type="password" name="password" class="form-control" placeholder="••••••••" autocomplete="current-password" required>
                 </div>
                 <button class="btn btn-primary w-100 py-3" type="submit">Login</button>
             </form>
-            <p class="mt-4 mb-0 text-body-secondary small">Need a portal account? Ask your administrator or use the self-registration page if enabled.</p>
+            <div class="mt-4 small text-body-secondary">
+                Need a portal account? Ask your administrator or use the self-registration page if enabled.
+            </div>
             <p class="mt-2 mb-0"><a href="/modules/auth/register.php">Client self-registration</a></p>
         </div>
     </div>
