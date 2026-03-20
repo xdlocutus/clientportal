@@ -4,6 +4,8 @@
     --portal-bg-accent: rgba(76, 118, 255, 0.14);
     --portal-surface: rgba(255, 255, 255, 0.78);
     --portal-surface-strong: #ffffff;
+    --portal-surface-muted: rgba(255, 255, 255, 0.62);
+    --portal-surface-subtle: rgba(79, 70, 229, 0.06);
     --portal-border: rgba(122, 138, 170, 0.22);
     --portal-text: #14213d;
     --portal-text-muted: #667085;
@@ -33,6 +35,8 @@ html[data-theme='dark'] {
     --portal-bg-accent: rgba(45, 212, 191, 0.16);
     --portal-surface: rgba(14, 23, 41, 0.82);
     --portal-surface-strong: #0f172a;
+    --portal-surface-muted: rgba(15, 23, 42, 0.92);
+    --portal-surface-subtle: rgba(139, 92, 246, 0.12);
     --portal-border: rgba(148, 163, 184, 0.16);
     --portal-text: #e5eefc;
     --portal-text-muted: #9fb0cb;
@@ -271,7 +275,8 @@ a {
 .form-select,
 .btn,
 .dropdown-menu,
-.modal-content {
+.modal-content,
+.input-group-text {
     border-radius: 1rem;
 }
 
@@ -279,13 +284,38 @@ a {
 .table-responsive,
 .table,
 .form-control,
-.form-select {
-    border-color: var(--portal-border);
+.form-select,
+.input-group-text,
+.border,
+hr {
+    border-color: var(--portal-border) !important;
+}
+
+.card,
+.card-header,
+.card-footer,
+.dropdown-menu,
+.modal-content,
+.list-group-item,
+.input-group-text,
+.bg-white,
+.bg-light,
+.bg-body,
+.bg-body-tertiary {
+    background: var(--portal-surface) !important;
+    color: var(--portal-text);
 }
 
 .card-header,
 .card-footer {
     border-color: var(--portal-border);
+}
+
+.card-header,
+.card-footer,
+.list-group-item,
+.input-group-text {
+    background: var(--portal-surface-muted) !important;
 }
 
 .table {
@@ -309,6 +339,40 @@ a {
     padding: 1rem 1.1rem;
     vertical-align: middle;
     border-color: var(--portal-border);
+}
+
+.table-responsive {
+    background: var(--portal-surface);
+}
+
+.text-muted,
+.text-body-secondary,
+.form-text {
+    color: var(--portal-text-muted) !important;
+}
+
+.btn-link {
+    color: var(--portal-primary);
+}
+
+.btn-link:hover,
+.btn-link:focus {
+    color: color-mix(in srgb, var(--portal-primary) 78%, white);
+}
+
+.btn-close {
+    filter: var(--portal-btn-close-filter, none);
+}
+
+html[data-theme='dark'] {
+    --portal-btn-close-filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+[data-line-item],
+.bg-light,
+.bg-body,
+.bg-body-tertiary {
+    background: var(--portal-surface-muted) !important;
 }
 
 .form-control,
