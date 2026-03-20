@@ -54,7 +54,7 @@ require BASE_PATH . '/includes/header.php';
     <div class="col-md-3"><label class="form-label">Active</label><select class="form-select" name="is_active"><option value="1" <?= request_int('is_active', 1) === 1 ? 'selected' : '' ?>>Yes</option><option value="0" <?= request_int('is_active', 1) === 0 ? 'selected' : '' ?>>No</option></select></div>
 
     <div class="col-12">
-        <div class="border rounded-3 p-3 bg-body-tertiary">
+        <div class="permissions-panel border rounded-3 p-3">
             <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                 <div>
                     <h2 class="h5 mb-1">Permissions</h2>
@@ -64,7 +64,7 @@ require BASE_PATH . '/includes/header.php';
             <div class="row g-3">
                 <?php foreach ($permissionGroups as $group => $permissions): ?>
                     <div class="col-lg-6">
-                        <div class="border rounded-3 h-100 p-3 bg-body">
+                        <div class="permission-group-card border rounded-3 h-100 p-3">
                             <div class="fw-semibold mb-2"><?= h($group) ?></div>
                             <?php foreach ($permissions as $key => $permission): ?>
                                 <label class="form-check mb-2">
