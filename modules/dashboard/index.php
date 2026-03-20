@@ -7,6 +7,7 @@ require_once BASE_PATH . '/includes/auth.php';
 
 require_login();
 
+$requestedModules = [];
 $enabledWidgets = enabled_dashboard_widgets();
 $metricQueries = [];
 if (dashboard_widget_enabled('stats.clients')) {
