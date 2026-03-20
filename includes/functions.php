@@ -885,3 +885,509 @@ function require_company_access(int $companyId): void
         redirect('/index.php');
     }
 }
+
+function ensure_invoices_billing_columns(): bool
+{
+    static $checked = false;
+    static $available = false;
+
+    if ($checked) {
+        return $available;
+    }
+
+    $checked = true;
+
+    try {
+        db()->query('SELECT billing_type, recurring_profile_id FROM invoices LIMIT 1');
+        $available = true;
+        return true;
+    } catch (PDOException) {
+        try {
+            db()->exec("ALTER TABLE invoices ADD COLUMN billing_type VARCHAR(20) NOT NULL DEFAULT 'once_off' AFTER due_date");
+        } catch (PDOException) {
+        }
+
+        try {
+            db()->exec('ALTER TABLE invoices ADD COLUMN recurring_profile_id INT UNSIGNED DEFAULT NULL AFTER billing_type');
+        } catch (PDOException) {
+        }
+
+        try {
+            db()->query('SELECT billing_type, recurring_profile_id FROM invoices LIMIT 1');
+            $available = true;
+        } catch (PDOException) {
+            $available = false;
+        }
+    }
+
+    return $available;
+}
+
+function invoice_payments_storage_available(): bool
+{
+    static $checked = false;
+    static $available = false;
+
+    if ($checked) {
+        return $available;
+    }
+
+    $checked = true;
+
+    try {
+        db()->query('SELECT 1 FROM invoice_payments LIMIT 1');
+        $available = true;
+        return true;
+    } catch (PDOException) {
+        try {
+            db()->exec(
+                "CREATE TABLE IF NOT EXISTS invoice_payments (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    company_id INT UNSIGNED NOT NULL,
+                    client_id INT UNSIGNED NOT NULL,
+                    invoice_id INT UNSIGNED NOT NULL,
+                    payment_date DATE NOT NULL,
+                    amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                    reference VARCHAR(120) DEFAULT NULL,
+                    notes TEXT DEFAULT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_invoice_payments_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE CASCADE,
+                    CONSTRAINT fk_invoice_payments_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE,
+                    CONSTRAINT fk_invoice_payments_invoice FOREIGN KEY (invoice_id) REFERENCES invoices (id) ON DELETE CASCADE,
+                    KEY idx_invoice_payments_invoice (invoice_id),
+                    KEY idx_invoice_payments_client_date (company_id, client_id, payment_date)
+                ) ENGINE=InnoDB"
+            );
+            $available = true;
+        } catch (PDOException) {
+            $available = false;
+        }
+    }
+
+    return $available;
+}
+
+function recurring_billing_profiles_storage_available(): bool
+{
+    static $checked = false;
+    static $available = false;
+
+    if ($checked) {
+        return $available;
+    }
+
+    $checked = true;
+
+    try {
+        db()->query('SELECT 1 FROM recurring_billing_profiles LIMIT 1');
+        $available = true;
+        return true;
+    } catch (PDOException) {
+        try {
+            db()->exec(
+                "CREATE TABLE IF NOT EXISTS recurring_billing_profiles (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    company_id INT UNSIGNED NOT NULL,
+                    client_id INT UNSIGNED NOT NULL,
+                    service_id INT UNSIGNED DEFAULT NULL,
+                    title VARCHAR(150) NOT NULL,
+                    description TEXT DEFAULT NULL,
+                    billing_cycle ENUM('weekly','monthly','quarterly','yearly') NOT NULL DEFAULT 'monthly',
+                    quantity DECIMAL(12,2) NOT NULL DEFAULT 1.00,
+                    unit_price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                    tax_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                    discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                    due_days INT NOT NULL DEFAULT 7,
+                    start_date DATE NOT NULL,
+                    next_invoice_date DATE NOT NULL,
+                    end_date DATE DEFAULT NULL,
+                    last_invoiced_at DATETIME DEFAULT NULL,
+                    status ENUM('active','paused','completed') NOT NULL DEFAULT 'active',
+                    notes TEXT DEFAULT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_recurring_profiles_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE CASCADE,
+                    CONSTRAINT fk_recurring_profiles_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE,
+                    CONSTRAINT fk_recurring_profiles_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE SET NULL,
+                    KEY idx_recurring_profiles_due (company_id, status, next_invoice_date),
+                    KEY idx_recurring_profiles_client (company_id, client_id, status)
+                ) ENGINE=InnoDB"
+            );
+            $available = true;
+        } catch (PDOException) {
+            $available = false;
+        }
+    }
+
+    return $available;
+}
+
+function billing_system_ready(): bool
+{
+    ensure_invoice_item_source_columns();
+    ensure_invoice_item_description_capacity();
+
+    return ensure_invoices_billing_columns()
+        && invoice_payments_storage_available()
+        && recurring_billing_profiles_storage_available();
+}
+
+function format_billing_type(string $billingType): string
+{
+    return match ($billingType) {
+        'recurring' => 'Recurring',
+        default => 'Once-off',
+    };
+}
+
+function billing_cycle_label(string $cycle): string
+{
+    return match ($cycle) {
+        'weekly' => 'Weekly',
+        'monthly' => 'Monthly',
+        'quarterly' => 'Quarterly',
+        'yearly' => 'Yearly',
+        'one_time' => 'One-time',
+        default => ucfirst(str_replace('_', ' ', $cycle)),
+    };
+}
+
+function generate_company_invoice_number(int $companyId): string
+{
+    $prefix = setting('invoice_prefix', 'INV-');
+
+    if ($companyId > 0) {
+        $settings = company_settings($companyId);
+        $prefix = trim((string) ($settings['invoice_prefix'] ?? $prefix));
+        if ($prefix === '') {
+            $prefix = 'INV-';
+        }
+    }
+
+    return sprintf('%s%s%04d', $prefix, date('YmdHis'), random_int(1, 9999));
+}
+
+function calculate_next_billing_date(string $cycle, string $fromDate): string
+{
+    $date = new DateTimeImmutable($fromDate);
+
+    return match ($cycle) {
+        'weekly' => $date->modify('+1 week')->format('Y-m-d'),
+        'quarterly' => $date->modify('+3 months')->format('Y-m-d'),
+        'yearly' => $date->modify('+1 year')->format('Y-m-d'),
+        default => $date->modify('+1 month')->format('Y-m-d'),
+    };
+}
+
+function invoice_payment_totals(array $invoiceIds): array
+{
+    if ($invoiceIds === [] || !invoice_payments_storage_available()) {
+        return [];
+    }
+
+    $invoiceIds = array_values(array_unique(array_map('intval', $invoiceIds)));
+    $placeholders = implode(',', array_fill(0, count($invoiceIds), '?'));
+    $stmt = db()->prepare(
+        'SELECT invoice_id, COALESCE(SUM(amount), 0) AS paid_total
+         FROM invoice_payments
+         WHERE invoice_id IN (' . $placeholders . ')
+         GROUP BY invoice_id'
+    );
+    $stmt->execute($invoiceIds);
+
+    $totals = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $totals[(int) $row['invoice_id']] = (float) $row['paid_total'];
+    }
+
+    return $totals;
+}
+
+function invoice_balance_amount(float $totalAmount, float $paidAmount): float
+{
+    return max(0, round($totalAmount - $paidAmount, 2));
+}
+
+function sync_invoice_payment_status(int $invoiceId): void
+{
+    ensure_invoices_billing_columns();
+
+    $stmt = db()->prepare('SELECT id, due_date, status, total_amount FROM invoices WHERE id = :id LIMIT 1');
+    $stmt->execute(['id' => $invoiceId]);
+    $invoice = $stmt->fetch();
+
+    if (!$invoice || in_array($invoice['status'], ['draft', 'cancelled'], true)) {
+        return;
+    }
+
+    $paidAmount = invoice_payment_totals([$invoiceId])[$invoiceId] ?? 0.0;
+    $balance = invoice_balance_amount((float) $invoice['total_amount'], $paidAmount);
+    $today = date('Y-m-d');
+
+    $status = 'paid';
+    if ($balance > 0) {
+        $status = ((string) $invoice['due_date'] < $today) ? 'overdue' : 'unpaid';
+    }
+
+    db()->prepare('UPDATE invoices SET status = :status, updated_at = NOW() WHERE id = :id')->execute([
+        'id' => $invoiceId,
+        'status' => $status,
+    ]);
+}
+
+function create_invoice_record(array $invoiceData, array $items): int
+{
+    ensure_invoices_billing_columns();
+    ensure_invoice_item_source_columns();
+
+    $stmt = db()->prepare(
+        'INSERT INTO invoices (
+            company_id, client_id, invoice_number, invoice_date, due_date, billing_type, recurring_profile_id,
+            status, notes, subtotal, tax_amount, discount_amount, total_amount, created_at, updated_at
+        ) VALUES (
+            :company_id, :client_id, :invoice_number, :invoice_date, :due_date, :billing_type, :recurring_profile_id,
+            :status, :notes, :subtotal, :tax_amount, :discount_amount, :total_amount, NOW(), NOW()
+        )'
+    );
+    $stmt->execute([
+        'company_id' => (int) $invoiceData['company_id'],
+        'client_id' => (int) $invoiceData['client_id'],
+        'invoice_number' => (string) $invoiceData['invoice_number'],
+        'invoice_date' => (string) $invoiceData['invoice_date'],
+        'due_date' => (string) $invoiceData['due_date'],
+        'billing_type' => (string) ($invoiceData['billing_type'] ?? 'once_off'),
+        'recurring_profile_id' => $invoiceData['recurring_profile_id'] ?? null,
+        'status' => (string) ($invoiceData['status'] ?? 'unpaid'),
+        'notes' => (string) ($invoiceData['notes'] ?? ''),
+        'subtotal' => (float) $invoiceData['subtotal'],
+        'tax_amount' => (float) $invoiceData['tax_amount'],
+        'discount_amount' => (float) $invoiceData['discount_amount'],
+        'total_amount' => (float) $invoiceData['total_amount'],
+    ]);
+    $invoiceId = (int) db()->lastInsertId();
+
+    $itemStmt = db()->prepare(
+        'INSERT INTO invoice_items (
+            invoice_id, description, quantity, unit_price, line_total, source_type, source_id, created_at, updated_at
+         ) VALUES (
+            :invoice_id, :description, :quantity, :unit_price, :line_total, :source_type, :source_id, NOW(), NOW()
+         )'
+    );
+
+    foreach ($items as $item) {
+        $itemStmt->execute([
+            'invoice_id' => $invoiceId,
+            'description' => (string) $item['description'],
+            'quantity' => (float) $item['quantity'],
+            'unit_price' => (float) $item['unit_price'],
+            'line_total' => (float) $item['line_total'],
+            'source_type' => (string) ($item['source_type'] ?? 'manual'),
+            'source_id' => $item['source_id'] ?? null,
+        ]);
+    }
+
+    return $invoiceId;
+}
+
+function generate_due_recurring_invoices(?int $companyId = null): int
+{
+    if (!billing_system_ready() || !has_permission('invoices.create')) {
+        return 0;
+    }
+
+    $params = ['today' => date('Y-m-d')];
+    $sql = "SELECT *
+            FROM recurring_billing_profiles
+            WHERE status = 'active'
+              AND next_invoice_date <= :today";
+
+    if ($companyId !== null && $companyId > 0) {
+        $sql .= ' AND company_id = :company_id';
+        $params['company_id'] = $companyId;
+    } elseif (!is_super_admin()) {
+        $sql .= ' AND company_id = :company_id';
+        $params['company_id'] = current_company_id();
+    }
+
+    $sql .= ' ORDER BY next_invoice_date ASC, id ASC';
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+    $profiles = $stmt->fetchAll();
+
+    $generated = 0;
+
+    foreach ($profiles as $profile) {
+        $nextInvoiceDate = (string) $profile['next_invoice_date'];
+        $endDate = trim((string) $profile['end_date']);
+
+        while ($nextInvoiceDate !== '' && $nextInvoiceDate <= date('Y-m-d')) {
+            if ($endDate !== '' && $nextInvoiceDate > $endDate) {
+                db()->prepare("UPDATE recurring_billing_profiles SET status = 'completed', updated_at = NOW() WHERE id = :id")
+                    ->execute(['id' => (int) $profile['id']]);
+                break;
+            }
+
+            $subtotal = round((float) $profile['quantity'] * (float) $profile['unit_price'], 2);
+            $taxAmount = (float) $profile['tax_amount'];
+            $discountAmount = (float) $profile['discount_amount'];
+            $totalAmount = max(0, round($subtotal + $taxAmount - $discountAmount, 2));
+
+            db()->beginTransaction();
+            try {
+                create_invoice_record(
+                    [
+                        'company_id' => (int) $profile['company_id'],
+                        'client_id' => (int) $profile['client_id'],
+                        'invoice_number' => generate_company_invoice_number((int) $profile['company_id']),
+                        'invoice_date' => $nextInvoiceDate,
+                        'due_date' => (new DateTimeImmutable($nextInvoiceDate))->modify('+' . max(0, (int) $profile['due_days']) . ' days')->format('Y-m-d'),
+                        'billing_type' => 'recurring',
+                        'recurring_profile_id' => (int) $profile['id'],
+                        'status' => 'unpaid',
+                        'notes' => (string) ($profile['notes'] ?? ''),
+                        'subtotal' => $subtotal,
+                        'tax_amount' => $taxAmount,
+                        'discount_amount' => $discountAmount,
+                        'total_amount' => $totalAmount,
+                    ],
+                    [[
+                        'description' => trim((string) $profile['description']) !== '' ? (string) $profile['description'] : (string) $profile['title'],
+                        'quantity' => (float) $profile['quantity'],
+                        'unit_price' => (float) $profile['unit_price'],
+                        'line_total' => $subtotal,
+                        'source_type' => ((int) $profile['service_id'] > 0) ? 'service' : 'manual',
+                        'source_id' => ((int) $profile['service_id'] > 0) ? (int) $profile['service_id'] : null,
+                    ]]
+                );
+
+                $nextInvoiceDate = calculate_next_billing_date((string) $profile['billing_cycle'], $nextInvoiceDate);
+                $nextStatus = ($endDate !== '' && $nextInvoiceDate > $endDate) ? 'completed' : 'active';
+
+                db()->prepare(
+                    'UPDATE recurring_billing_profiles
+                     SET next_invoice_date = :next_invoice_date, last_invoiced_at = NOW(), status = :status, updated_at = NOW()
+                     WHERE id = :id'
+                )->execute([
+                    'id' => (int) $profile['id'],
+                    'next_invoice_date' => $nextInvoiceDate,
+                    'status' => $nextStatus,
+                ]);
+
+                db()->commit();
+                $generated++;
+
+                if ($nextStatus === 'completed') {
+                    break;
+                }
+            } catch (Throwable $exception) {
+                db()->rollBack();
+                throw $exception;
+            }
+        }
+    }
+
+    return $generated;
+}
+
+function statement_entries(?int $companyId = null, ?int $clientId = null): array
+{
+    billing_system_ready();
+
+    $entries = [];
+    $params = [];
+    $invoiceSql = 'SELECT invoices.id, invoices.company_id, invoices.client_id, invoices.invoice_number AS reference, invoices.invoice_date AS entry_date,
+                          invoices.total_amount AS amount, invoices.notes, invoices.billing_type, clients.company_name
+                   FROM invoices
+                   INNER JOIN clients ON clients.id = invoices.client_id
+                   WHERE invoices.status <> :cancelled';
+    $params['cancelled'] = 'cancelled';
+
+    if ($companyId !== null && $companyId > 0) {
+        $invoiceSql .= ' AND invoices.company_id = :company_id';
+        $params['company_id'] = $companyId;
+    } elseif (!is_super_admin()) {
+        $invoiceSql .= ' AND invoices.company_id = :company_id';
+        $params['company_id'] = current_company_id();
+    }
+
+    if ($clientId !== null && $clientId > 0) {
+        $invoiceSql .= ' AND invoices.client_id = :client_id';
+        $params['client_id'] = $clientId;
+    }
+
+    $invoiceStmt = db()->prepare($invoiceSql);
+    $invoiceStmt->execute($params);
+    foreach ($invoiceStmt->fetchAll() as $invoice) {
+        $entries[] = [
+            'entry_date' => (string) $invoice['entry_date'],
+            'type' => 'invoice',
+            'label' => 'Invoice ' . $invoice['reference'],
+            'reference' => (string) $invoice['reference'],
+            'client_name' => (string) $invoice['company_name'],
+            'billing_type' => (string) $invoice['billing_type'],
+            'debit' => (float) $invoice['amount'],
+            'credit' => 0.0,
+            'notes' => (string) ($invoice['notes'] ?? ''),
+        ];
+    }
+
+    if (invoice_payments_storage_available()) {
+        $paymentSql = 'SELECT invoice_payments.*, clients.company_name, invoices.invoice_number
+                       FROM invoice_payments
+                       INNER JOIN clients ON clients.id = invoice_payments.client_id
+                       INNER JOIN invoices ON invoices.id = invoice_payments.invoice_id
+                       WHERE 1=1';
+        $paymentParams = [];
+
+        if ($companyId !== null && $companyId > 0) {
+            $paymentSql .= ' AND invoice_payments.company_id = :company_id';
+            $paymentParams['company_id'] = $companyId;
+        } elseif (!is_super_admin()) {
+            $paymentSql .= ' AND invoice_payments.company_id = :company_id';
+            $paymentParams['company_id'] = current_company_id();
+        }
+
+        if ($clientId !== null && $clientId > 0) {
+            $paymentSql .= ' AND invoice_payments.client_id = :client_id';
+            $paymentParams['client_id'] = $clientId;
+        }
+
+        $paymentStmt = db()->prepare($paymentSql);
+        $paymentStmt->execute($paymentParams);
+        foreach ($paymentStmt->fetchAll() as $payment) {
+            $entries[] = [
+                'entry_date' => (string) $payment['payment_date'],
+                'type' => 'payment',
+                'label' => 'Payment for ' . $payment['invoice_number'],
+                'reference' => trim((string) $payment['reference']) !== '' ? (string) $payment['reference'] : (string) $payment['invoice_number'],
+                'client_name' => (string) $payment['company_name'],
+                'billing_type' => '',
+                'debit' => 0.0,
+                'credit' => (float) $payment['amount'],
+                'notes' => (string) ($payment['notes'] ?? ''),
+            ];
+        }
+    }
+
+    usort(
+        $entries,
+        static function (array $left, array $right): int {
+            $dateCompare = strcmp((string) $left['entry_date'], (string) $right['entry_date']);
+            if ($dateCompare !== 0) {
+                return $dateCompare;
+            }
+
+            return strcmp((string) $left['type'], (string) $right['type']);
+        }
+    );
+
+    $runningBalance = 0.0;
+    foreach ($entries as &$entry) {
+        $runningBalance += (float) $entry['debit'] - (float) $entry['credit'];
+        $entry['running_balance'] = round($runningBalance, 2);
+    }
+    unset($entry);
+
+    return $entries;
+}
