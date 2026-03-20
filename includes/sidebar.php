@@ -3,19 +3,39 @@
 declare(strict_types=1);
 
 $branding = $companyBranding ?? portal_branding();
-$navItems = [
+$primaryNavItems = [
     ['label' => 'Dashboard', 'href' => '/modules/dashboard/index.php', 'visible' => true, 'icon' => '◫'],
-    ['label' => 'Companies', 'href' => '/modules/companies/index.php', 'visible' => is_super_admin(), 'icon' => '▣'],
-    ['label' => 'Users', 'href' => '/modules/users/index.php', 'visible' => has_permission('users.manage'), 'icon' => '◌'],
-    ['label' => 'Clients', 'href' => '/modules/clients/index.php', 'visible' => has_permission('clients.view'), 'icon' => '◎'],
-    ['label' => 'Services', 'href' => '/modules/services/index.php', 'visible' => has_permission('services.view'), 'icon' => '✦'],
-    ['label' => 'Products', 'href' => '/modules/products/index.php', 'visible' => has_permission('products.view'), 'icon' => '⬡'],
-    ['label' => 'Quotes', 'href' => '/modules/invoices/index.php', 'visible' => has_permission('invoices.view'), 'icon' => '◩'],
-    ['label' => 'Tickets', 'href' => '/modules/tickets/index.php', 'visible' => has_permission('tickets.view'), 'icon' => '✉'],
-    ['label' => 'Reports', 'href' => '/modules/reports/index.php', 'visible' => has_permission('reports.view'), 'icon' => '▤'],
-    ['label' => 'Widgets', 'href' => '/modules/dashboard_widgets/index.php', 'visible' => has_permission('dashboard_widgets.manage'), 'icon' => '◧'],
-    ['label' => 'Exports', 'href' => '/modules/exports/index.php', 'visible' => has_permission('exports.view'), 'icon' => '⇩'],
-    ['label' => 'Settings', 'href' => '/modules/settings/index.php', 'visible' => has_permission('settings.manage'), 'icon' => '⚙'],
+];
+$navGroups = [
+    [
+        'label' => 'Workspace',
+        'icon' => '⌘',
+        'items' => [
+            ['label' => 'Clients', 'href' => '/modules/clients/index.php', 'visible' => has_permission('clients.view'), 'icon' => '◎'],
+            ['label' => 'Quotes', 'href' => '/modules/invoices/index.php', 'visible' => has_permission('invoices.view'), 'icon' => '◩'],
+            ['label' => 'Tickets', 'href' => '/modules/tickets/index.php', 'visible' => has_permission('tickets.view'), 'icon' => '✉'],
+        ],
+    ],
+    [
+        'label' => 'Catalog',
+        'icon' => '◈',
+        'items' => [
+            ['label' => 'Services', 'href' => '/modules/services/index.php', 'visible' => has_permission('services.view'), 'icon' => '✦'],
+            ['label' => 'Products', 'href' => '/modules/products/index.php', 'visible' => has_permission('products.view'), 'icon' => '⬡'],
+            ['label' => 'Exports', 'href' => '/modules/exports/index.php', 'visible' => has_permission('exports.view'), 'icon' => '⇩'],
+        ],
+    ],
+    [
+        'label' => 'Admin',
+        'icon' => '⚙',
+        'items' => [
+            ['label' => 'Companies', 'href' => '/modules/companies/index.php', 'visible' => is_super_admin(), 'icon' => '▣'],
+            ['label' => 'Users', 'href' => '/modules/users/index.php', 'visible' => has_permission('users.manage'), 'icon' => '◌'],
+            ['label' => 'Reports', 'href' => '/modules/reports/index.php', 'visible' => has_permission('reports.view'), 'icon' => '▤'],
+            ['label' => 'Widgets', 'href' => '/modules/dashboard_widgets/index.php', 'visible' => has_permission('dashboard_widgets.manage'), 'icon' => '◧'],
+            ['label' => 'Settings', 'href' => '/modules/settings/index.php', 'visible' => has_permission('settings.manage'), 'icon' => '⚙'],
+        ],
+    ],
 ];
 ?>
 <aside class="sidebar p-3">
@@ -30,8 +50,8 @@ $navItems = [
         </a>
         <p class="sidebar-copy mb-0 mt-3"><?= h($branding['portal_tagline']) ?></p>
     </div>
-    <nav class="nav flex-column gap-2">
-        <?php foreach ($navItems as $item): ?>
+    <nav class="nav flex-column gap-2 sidebar-nav">
+        <?php foreach ($primaryNavItems as $item): ?>
             <?php if (!$item['visible']) {
                 continue;
             }
@@ -42,6 +62,44 @@ $navItems = [
                 <span class="nav-icon" aria-hidden="true"><?= h($item['icon']) ?></span>
                 <span><?= h($item['label']) ?></span>
             </a>
+        <?php endforeach; ?>
+        <?php foreach ($navGroups as $group): ?>
+            <?php
+            $visibleItems = array_values(array_filter(
+                $group['items'],
+                static fn(array $item): bool => $item['visible']
+            ));
+
+            if ($visibleItems === []) {
+                continue;
+            }
+
+            $groupIsActive = false;
+            foreach ($visibleItems as $item) {
+                if (str_starts_with($currentPath, dirname($item['href'])) || $currentPath === $item['href']) {
+                    $groupIsActive = true;
+                    break;
+                }
+            }
+            ?>
+            <details class="sidebar-group"<?= $groupIsActive ? ' open' : '' ?>>
+                <summary class="sidebar-group-toggle">
+                    <span class="nav-link sidebar-group-summary<?= $groupIsActive ? ' active' : '' ?>">
+                        <span class="nav-icon" aria-hidden="true"><?= h($group['icon']) ?></span>
+                        <span><?= h($group['label']) ?></span>
+                        <span class="sidebar-group-chevron ms-auto" aria-hidden="true">⌄</span>
+                    </span>
+                </summary>
+                <div class="sidebar-group-items">
+                    <?php foreach ($visibleItems as $item): ?>
+                        <?php $isActive = str_starts_with($currentPath, dirname($item['href'])) || $currentPath === $item['href']; ?>
+                        <a class="nav-link sidebar-sublink<?= $isActive ? ' active' : '' ?>" href="<?= h($item['href']) ?>">
+                            <span class="nav-icon" aria-hidden="true"><?= h($item['icon']) ?></span>
+                            <span><?= h($item['label']) ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </details>
         <?php endforeach; ?>
         <a class="nav-link logout-link mt-2" href="/modules/auth/logout.php">
             <span class="nav-icon" aria-hidden="true">↗</span>
