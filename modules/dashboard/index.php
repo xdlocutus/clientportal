@@ -63,14 +63,15 @@ if (has_permission('tickets.view')) {
 }
 
 $pageTitle = 'Dashboard';
+$branding = portal_branding();
 require BASE_PATH . '/includes/header.php';
 ?>
 <section class="hero-panel mb-4">
     <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-4">
         <div>
             <span class="eyebrow-label">Overview</span>
-            <h2 class="h3 mb-2 mt-2">Everything important, at a glance.</h2>
-            <p class="mb-0 text-body-secondary">Track only the areas this user can access, so each team member sees a focused workspace.</p>
+            <h2 class="h3 mb-2 mt-2">Everything important for <?= h($branding['brand_name']) ?>, at a glance.</h2>
+            <p class="mb-0 text-body-secondary"><?= h($branding['dashboard_message']) ?></p>
         </div>
         <div class="quick-actions">
             <?php if (has_permission('clients.create')): ?>

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+$branding = $companyBranding ?? portal_branding();
 $navItems = [
     ['label' => 'Dashboard', 'href' => '/modules/dashboard/index.php', 'visible' => true, 'icon' => '◫'],
     ['label' => 'Companies', 'href' => '/modules/companies/index.php', 'visible' => is_super_admin(), 'icon' => '▣'],
@@ -16,10 +17,14 @@ $navItems = [
 <aside class="sidebar p-3">
     <div class="sidebar-brand mb-4">
         <a class="text-decoration-none text-white fs-4 fw-bold d-inline-flex align-items-center gap-2" href="/index.php">
-            <span class="sidebar-brand-mark">BP</span>
-            <span><?= h(APP_NAME) ?></span>
+            <?php if ($branding['logo_url'] !== ''): ?>
+                <img class="sidebar-brand-logo" src="<?= h($branding['logo_url']) ?>" alt="<?= h($branding['brand_name']) ?> logo">
+            <?php else: ?>
+                <span class="sidebar-brand-mark"><?= h($branding['brand_initials']) ?></span>
+            <?php endif; ?>
+            <span><?= h($branding['brand_name']) ?></span>
         </a>
-        <p class="sidebar-copy mb-0 mt-3">A cleaner, faster workspace for your team and clients.</p>
+        <p class="sidebar-copy mb-0 mt-3"><?= h($branding['portal_tagline']) ?></p>
     </div>
     <nav class="nav flex-column gap-2">
         <?php foreach ($navItems as $item): ?>
