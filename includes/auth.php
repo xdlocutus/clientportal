@@ -107,6 +107,31 @@ function permission_catalog(): array
             'description' => 'Close open tickets.',
             'category' => 'Tickets',
         ],
+        'jobs.view' => [
+            'label' => 'View jobcards',
+            'description' => 'Open booked jobs, technician notes, and client sign-off details.',
+            'category' => 'Jobcards',
+        ],
+        'jobs.create' => [
+            'label' => 'Create jobcards',
+            'description' => 'Book new installation, service, and site visit jobs.',
+            'category' => 'Jobcards',
+        ],
+        'jobs.edit' => [
+            'label' => 'Edit jobcards',
+            'description' => 'Update scheduled work, technician assignments, and job details.',
+            'category' => 'Jobcards',
+        ],
+        'jobs.notes' => [
+            'label' => 'Add technician notes',
+            'description' => 'Post site notes and progress updates on jobcards.',
+            'category' => 'Jobcards',
+        ],
+        'jobs.sign' => [
+            'label' => 'Client sign-off',
+            'description' => 'Allow clients to sign completed jobcards in the portal.',
+            'category' => 'Jobcards',
+        ],
         'reports.view' => [
             'label' => 'View reports',
             'description' => 'Open custom sales, revenue, unpaid invoice, and ticket reports.',
@@ -149,8 +174,8 @@ function default_permissions_for_role(string $role): array
 {
     return match ($role) {
         'super_admin', 'company_admin' => array_keys(permission_catalog()),
-        'company_staff' => ['invoices.view', 'invoices.create', 'invoices.edit', 'invoices.delete'],
-        'client' => ['invoices.view', 'tickets.view', 'tickets.create', 'tickets.reply'],
+        'company_staff' => ['invoices.view', 'invoices.create', 'invoices.edit', 'invoices.delete', 'jobs.view', 'jobs.create', 'jobs.edit', 'jobs.notes'],
+        'client' => ['invoices.view', 'tickets.view', 'tickets.create', 'tickets.reply', 'jobs.view', 'jobs.sign'],
         default => [],
     };
 }

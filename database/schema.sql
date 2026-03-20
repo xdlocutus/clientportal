@@ -159,6 +159,53 @@ CREATE TABLE tickets (
     KEY idx_tickets_user (user_id)
 ) ENGINE=InnoDB;
 
+CREATE TABLE jobcards (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id INT UNSIGNED NOT NULL,
+    client_id INT UNSIGNED NOT NULL,
+    created_by_user_id INT UNSIGNED NOT NULL,
+    assigned_user_id INT UNSIGNED DEFAULT NULL,
+    job_number VARCHAR(50) NOT NULL,
+    title VARCHAR(190) NOT NULL,
+    job_type VARCHAR(120) DEFAULT NULL,
+    scheduled_for DATETIME NOT NULL,
+    status ENUM('scheduled','in_progress','completed','on_hold','cancelled') NOT NULL DEFAULT 'scheduled',
+    priority ENUM('low','medium','high','urgent') NOT NULL DEFAULT 'medium',
+    site_contact_name VARCHAR(150) DEFAULT NULL,
+    site_contact_phone VARCHAR(50) DEFAULT NULL,
+    service_address TEXT DEFAULT NULL,
+    scope_of_work TEXT DEFAULT NULL,
+    access_instructions TEXT DEFAULT NULL,
+    materials_required TEXT DEFAULT NULL,
+    internal_notes TEXT DEFAULT NULL,
+    client_signature_name VARCHAR(150) DEFAULT NULL,
+    client_signature_notes TEXT DEFAULT NULL,
+    client_signed_at DATETIME DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_jobcards_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE CASCADE,
+    CONSTRAINT fk_jobcards_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE,
+    CONSTRAINT fk_jobcards_created_by_user FOREIGN KEY (created_by_user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_jobcards_assigned_user FOREIGN KEY (assigned_user_id) REFERENCES users (id) ON DELETE SET NULL,
+    UNIQUE KEY uq_jobcards_company_number (company_id, job_number),
+    KEY idx_jobcards_company_client_status (company_id, client_id, status),
+    KEY idx_jobcards_assigned_user (assigned_user_id),
+    KEY idx_jobcards_scheduled_for (company_id, scheduled_for)
+) ENGINE=InnoDB;
+
+CREATE TABLE jobcard_notes (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    jobcard_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
+    note TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_jobcard_notes_jobcard FOREIGN KEY (jobcard_id) REFERENCES jobcards (id) ON DELETE CASCADE,
+    CONSTRAINT fk_jobcard_notes_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    KEY idx_jobcard_notes_jobcard (jobcard_id),
+    KEY idx_jobcard_notes_user (user_id)
+) ENGINE=InnoDB;
+
 CREATE TABLE ticket_replies (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     ticket_id INT UNSIGNED NOT NULL,

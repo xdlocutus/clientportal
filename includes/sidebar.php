@@ -13,6 +13,7 @@ $navGroups = [
         'items' => [
             ['label' => 'Clients', 'href' => '/modules/clients/index.php', 'visible' => has_permission('clients.view'), 'icon' => '◎'],
             ['label' => 'Quotes', 'href' => '/modules/invoices/index.php', 'visible' => has_permission('invoices.view'), 'icon' => '◩'],
+            ['label' => 'Jobcards', 'href' => '/modules/jobs/index.php', 'visible' => has_permission('jobs.view'), 'icon' => '🛠'],
             ['label' => 'Tickets', 'href' => '/modules/tickets/index.php', 'visible' => has_permission('tickets.view'), 'icon' => '✉'],
         ],
     ],

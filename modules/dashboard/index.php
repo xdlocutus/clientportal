@@ -141,6 +141,9 @@ require BASE_PATH . '/includes/header.php';
             <?php if (has_permission('invoices.create')): ?>
                 <a class="btn btn-outline-secondary" href="/modules/invoices/add.php">Create quote</a>
             <?php endif; ?>
+            <?php if (has_permission('jobs.create') && jobs_storage_available()): ?>
+                <a class="btn btn-outline-secondary" href="/modules/jobs/add.php">Book job</a>
+            <?php endif; ?>
             <?php if (has_permission('tickets.create')): ?>
                 <a class="btn btn-outline-secondary" href="/modules/tickets/add.php">Open ticket</a>
             <?php endif; ?>
