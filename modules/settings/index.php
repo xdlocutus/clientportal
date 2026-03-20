@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once BASE_PATH . '/includes/auth.php';
 
-require_role(['super_admin', 'company_admin', 'company_staff']);
+require_permission('settings.manage');
 $companyId = is_super_admin() ? request_int('company_id', current_company_id() ?? 0) : (int) current_company_id();
 if ($companyId < 1) {
     set_flash('warning', 'Select a company to manage settings.');

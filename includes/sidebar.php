@@ -5,12 +5,12 @@ declare(strict_types=1);
 $navItems = [
     ['label' => 'Dashboard', 'href' => '/modules/dashboard/index.php', 'visible' => true, 'icon' => '◫'],
     ['label' => 'Companies', 'href' => '/modules/companies/index.php', 'visible' => is_super_admin(), 'icon' => '▣'],
-    ['label' => 'Users', 'href' => '/modules/users/index.php', 'visible' => has_role(['super_admin', 'company_admin']), 'icon' => '◌'],
-    ['label' => 'Clients', 'href' => '/modules/clients/index.php', 'visible' => has_role(['super_admin', 'company_admin', 'company_staff']), 'icon' => '◎'],
-    ['label' => 'Services', 'href' => '/modules/services/index.php', 'visible' => has_role(['super_admin', 'company_admin', 'company_staff']), 'icon' => '✦'],
-    ['label' => 'Invoices', 'href' => '/modules/invoices/index.php', 'visible' => true, 'icon' => '◩'],
-    ['label' => 'Tickets', 'href' => '/modules/tickets/index.php', 'visible' => true, 'icon' => '✉'],
-    ['label' => 'Settings', 'href' => '/modules/settings/index.php', 'visible' => !is_client_role(), 'icon' => '⚙'],
+    ['label' => 'Users', 'href' => '/modules/users/index.php', 'visible' => has_permission('users.manage'), 'icon' => '◌'],
+    ['label' => 'Clients', 'href' => '/modules/clients/index.php', 'visible' => has_permission('clients.view'), 'icon' => '◎'],
+    ['label' => 'Services', 'href' => '/modules/services/index.php', 'visible' => has_permission('services.view'), 'icon' => '✦'],
+    ['label' => 'Quotes', 'href' => '/modules/invoices/index.php', 'visible' => has_permission('invoices.view'), 'icon' => '◩'],
+    ['label' => 'Tickets', 'href' => '/modules/tickets/index.php', 'visible' => has_permission('tickets.view'), 'icon' => '✉'],
+    ['label' => 'Settings', 'href' => '/modules/settings/index.php', 'visible' => has_permission('settings.manage'), 'icon' => '⚙'],
 ];
 ?>
 <aside class="sidebar p-3">
