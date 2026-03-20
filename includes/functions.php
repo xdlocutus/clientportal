@@ -324,7 +324,6 @@ function ensure_invoice_item_source_columns(): bool
     try {
         db()->query('SELECT source_type, source_id FROM invoice_items LIMIT 1');
         $available = true;
-        return true;
     } catch (PDOException) {
         try {
             db()->exec("ALTER TABLE invoice_items ADD COLUMN source_type VARCHAR(20) NOT NULL DEFAULT 'manual' AFTER line_total");
@@ -342,6 +341,17 @@ function ensure_invoice_item_source_columns(): bool
         } catch (PDOException) {
             $available = false;
         }
+    }
+
+    try {
+        $descriptionColumn = db()->query("SHOW COLUMNS FROM invoice_items LIKE 'description'")->fetch();
+        if (is_array($descriptionColumn)) {
+            $descriptionType = strtolower((string) ($descriptionColumn['Type'] ?? ''));
+            if ($descriptionType !== 'text') {
+                db()->exec('ALTER TABLE invoice_items MODIFY COLUMN description TEXT NOT NULL');
+            }
+        }
+    } catch (PDOException) {
     }
 
     return $available;

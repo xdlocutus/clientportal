@@ -129,7 +129,7 @@ CREATE TABLE invoices (
 CREATE TABLE invoice_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     invoice_id INT UNSIGNED NOT NULL,
-    description VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
     quantity DECIMAL(12,2) NOT NULL DEFAULT 1.00,
     unit_price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     line_total DECIMAL(12,2) NOT NULL DEFAULT 0.00,
