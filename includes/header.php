@@ -9,13 +9,14 @@ $pageTitle = $pageTitle ?? APP_NAME;
 $flashMessages = get_flash_messages();
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $bodyClasses = is_logged_in() ? 'portal-authenticated' : 'portal-guest';
+$companyBranding = $companyBranding ?? portal_branding();
 ?>
 <!doctype html>
 <html lang="en" data-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= h($pageTitle) ?> - <?= h(APP_NAME) ?></title>
+    <title><?= h($pageTitle) ?> - <?= h($companyBranding['brand_name']) ?></title>
     <script>
         (() => {
             const storedTheme = window.localStorage.getItem('portal-theme');
@@ -25,6 +26,12 @@ $bodyClasses = is_logged_in() ? 'portal-authenticated' : 'portal-guest';
         })();
     </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --portal-primary: <?= h($companyBranding['primary_color']) ?>;
+            --portal-primary-rgb: <?= h($companyBranding['primary_color_rgb']) ?>;
+        }
+    </style>
     <link href="/assets/css/style.css" rel="stylesheet">
 </head>
 <body class="<?= h($bodyClasses) ?>">

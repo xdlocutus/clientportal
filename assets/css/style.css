@@ -105,6 +105,24 @@ a {
     letter-spacing: 0.06em;
 }
 
+
+.sidebar-brand-logo,
+.topbar-company-logo {
+    width: 2.5rem;
+    height: 2.5rem;
+    object-fit: cover;
+    border-radius: 0.9rem;
+    background: rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.topbar-company-logo {
+    width: 3rem;
+    height: 3rem;
+    background: rgba(var(--portal-primary-rgb), 0.12);
+    box-shadow: none;
+}
+
 .sidebar-copy,
 .sidebar-user-label,
 .sidebar-user-role {

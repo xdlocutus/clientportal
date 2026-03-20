@@ -28,6 +28,7 @@ require BASE_PATH . '/includes/header.php';
                     <td><?= h($company['phone']) ?></td>
                     <td><?= invoice_status_badge($company['status']) ?></td>
                     <td class="text-end">
+                        <a class="btn btn-sm btn-outline-secondary" href="/modules/settings/index.php?company_id=<?= (int) $company['id'] ?>">Branding</a>
                         <a class="btn btn-sm btn-outline-primary" href="/modules/companies/edit.php?id=<?= (int) $company['id'] ?>">Edit</a>
                         <a class="btn btn-sm btn-outline-danger" href="/modules/companies/delete.php?id=<?= (int) $company['id'] ?>" data-confirm="Delete this company?">Delete</a>
                     </td>

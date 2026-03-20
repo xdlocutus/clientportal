@@ -88,13 +88,12 @@ function company_scope_params(): array
     return is_super_admin() ? [] : ['company_id' => current_company_id()];
 }
 
-function setting(string $key, string $default = ''): string
+function company_settings(int $companyId): array
 {
     static $cache = [];
 
-    $companyId = current_company_id();
-    if (!$companyId) {
-        return $default;
+    if ($companyId < 1) {
+        return [];
     }
 
     if (!isset($cache[$companyId])) {
@@ -106,7 +105,104 @@ function setting(string $key, string $default = ''): string
         }
     }
 
-    return $cache[$companyId][$key] ?? $default;
+    return $cache[$companyId];
+}
+
+function setting(string $key, string $default = ''): string
+{
+    $companyId = current_company_id();
+    if (!$companyId) {
+        return $default;
+    }
+
+    $settings = company_settings($companyId);
+
+    return $settings[$key] ?? $default;
+}
+
+function normalize_hex_color(?string $value, string $default = '#4f46e5'): string
+{
+    $candidate = strtoupper(trim((string) $value));
+    if (preg_match('/^#([0-9A-F]{3}|[0-9A-F]{6})$/', $candidate) !== 1) {
+        return strtoupper($default);
+    }
+
+    if (strlen($candidate) === 4) {
+        return sprintf(
+            '#%s%s%s%s%s%s',
+            $candidate[1],
+            $candidate[1],
+            $candidate[2],
+            $candidate[2],
+            $candidate[3],
+            $candidate[3]
+        );
+    }
+
+    return $candidate;
+}
+
+function hex_to_rgb_string(string $hexColor): string
+{
+    $hexColor = ltrim(normalize_hex_color($hexColor), '#');
+
+    return implode(', ', [
+        (string) hexdec(substr($hexColor, 0, 2)),
+        (string) hexdec(substr($hexColor, 2, 2)),
+        (string) hexdec(substr($hexColor, 4, 2)),
+    ]);
+}
+
+function brand_initials(string $name): string
+{
+    $name = trim($name);
+    if ($name === '') {
+        return 'BP';
+    }
+
+    $parts = preg_split('/\s+/', $name) ?: [];
+    $initials = '';
+
+    foreach ($parts as $part) {
+        $initials .= strtoupper(substr($part, 0, 1));
+        if (strlen($initials) >= 2) {
+            break;
+        }
+    }
+
+    return $initials !== '' ? $initials : 'BP';
+}
+
+function portal_branding(?int $companyId = null): array
+{
+    $companyId ??= current_company_id() ?? 0;
+    $settings = $companyId > 0 ? company_settings($companyId) : [];
+    $companyName = APP_NAME;
+
+    if ($companyId > 0) {
+        $stmt = db()->prepare('SELECT name FROM companies WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $companyId]);
+        $companyName = (string) ($stmt->fetchColumn() ?: APP_NAME);
+    }
+
+    $brandName = trim((string) ($settings['brand_name'] ?? ''));
+    $displayName = trim((string) ($settings['company_name'] ?? '')) ?: $companyName;
+    $primaryColor = normalize_hex_color($settings['primary_color'] ?? '#4f46e5');
+    $logoUrl = trim((string) ($settings['logo_url'] ?? ''));
+    $tagline = trim((string) ($settings['portal_tagline'] ?? '')) ?: 'A cleaner, faster workspace for your team and clients.';
+    $welcomeMessage = trim((string) ($settings['dashboard_message'] ?? '')) ?: 'Track only the areas this user can access, so each team member sees a focused workspace.';
+
+    return [
+        'company_id' => $companyId,
+        'company_name' => $displayName,
+        'brand_name' => $brandName !== '' ? $brandName : $displayName,
+        'logo_url' => $logoUrl,
+        'primary_color' => $primaryColor,
+        'primary_color_rgb' => hex_to_rgb_string($primaryColor),
+        'portal_tagline' => $tagline,
+        'dashboard_message' => $welcomeMessage,
+        'brand_initials' => brand_initials($brandName !== '' ? $brandName : $displayName),
+    ];
 }
 
 function invoice_status_badge(string $status): string
