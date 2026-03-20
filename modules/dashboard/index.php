@@ -14,6 +14,9 @@ if (has_permission('clients.view')) {
 if (has_permission('services.view')) {
     $metricQueries['services'] = 'SELECT COUNT(*) FROM services WHERE ' . (is_super_admin() ? '1=1' : 'company_id = :company_id');
 }
+if (has_permission('products.view') && products_storage_available()) {
+    $metricQueries['products'] = 'SELECT COUNT(*) FROM products WHERE ' . (is_super_admin() ? '1=1' : 'company_id = :company_id');
+}
 if (has_permission('invoices.view')) {
     $metricQueries['unpaid_invoices'] = "SELECT COUNT(*) FROM invoices WHERE " . (is_super_admin() ? '1=1' : 'company_id = :company_id') . " AND status IN ('draft','sent','unpaid','overdue')";
 }
@@ -80,6 +83,9 @@ require BASE_PATH . '/includes/header.php';
             <?php if (has_permission('services.create')): ?>
                 <a class="btn btn-outline-secondary" href="/modules/services/add.php">Add service</a>
             <?php endif; ?>
+            <?php if (has_permission('products.create')): ?>
+                <a class="btn btn-outline-secondary" href="/modules/products/add.php">Add product</a>
+            <?php endif; ?>
             <?php if (has_permission('invoices.create')): ?>
                 <a class="btn btn-outline-secondary" href="/modules/invoices/add.php">Create quote</a>
             <?php endif; ?>
@@ -95,6 +101,9 @@ require BASE_PATH . '/includes/header.php';
     <?php endif; ?>
     <?php if (isset($counts['services'])): ?>
         <div class="col-md-6 col-xl-3"><div class="card card-stat"><div class="card-body"><div class="stat-label">Services</div><div class="d-flex align-items-end justify-content-between gap-3"><div class="display-6 mb-0"><?= $counts['services'] ?></div><span class="stat-icon">✦</span></div></div></div></div>
+    <?php endif; ?>
+    <?php if (isset($counts['products'])): ?>
+        <div class="col-md-6 col-xl-3"><div class="card card-stat"><div class="card-body"><div class="stat-label">Products</div><div class="d-flex align-items-end justify-content-between gap-3"><div class="display-6 mb-0"><?= $counts['products'] ?></div><span class="stat-icon">⬡</span></div></div></div></div>
     <?php endif; ?>
     <?php if (isset($counts['unpaid_invoices'])): ?>
         <div class="col-md-6 col-xl-3"><div class="card card-stat"><div class="card-body"><div class="stat-label">Open Quotes & Invoices</div><div class="d-flex align-items-end justify-content-between gap-3"><div class="display-6 mb-0"><?= $counts['unpaid_invoices'] ?></div><span class="stat-icon">◩</span></div></div></div></div>

@@ -9,6 +9,7 @@ $navItems = [
     ['label' => 'Users', 'href' => '/modules/users/index.php', 'visible' => has_permission('users.manage'), 'icon' => '◌'],
     ['label' => 'Clients', 'href' => '/modules/clients/index.php', 'visible' => has_permission('clients.view'), 'icon' => '◎'],
     ['label' => 'Services', 'href' => '/modules/services/index.php', 'visible' => has_permission('services.view'), 'icon' => '✦'],
+    ['label' => 'Products', 'href' => '/modules/products/index.php', 'visible' => has_permission('products.view'), 'icon' => '⬡'],
     ['label' => 'Quotes', 'href' => '/modules/invoices/index.php', 'visible' => has_permission('invoices.view'), 'icon' => '◩'],
     ['label' => 'Tickets', 'href' => '/modules/tickets/index.php', 'visible' => has_permission('tickets.view'), 'icon' => '✉'],
     ['label' => 'Settings', 'href' => '/modules/settings/index.php', 'visible' => has_permission('settings.manage'), 'icon' => '⚙'],

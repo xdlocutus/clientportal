@@ -47,6 +47,26 @@ function permission_catalog(): array
             'description' => 'Remove services.',
             'category' => 'Services',
         ],
+        'products.view' => [
+            'label' => 'View products',
+            'description' => 'See the products catalog for this company.',
+            'category' => 'Products',
+        ],
+        'products.create' => [
+            'label' => 'Create products',
+            'description' => 'Add new products to the catalog.',
+            'category' => 'Products',
+        ],
+        'products.edit' => [
+            'label' => 'Edit products',
+            'description' => 'Update existing products.',
+            'category' => 'Products',
+        ],
+        'products.delete' => [
+            'label' => 'Delete products',
+            'description' => 'Remove products from the catalog.',
+            'category' => 'Products',
+        ],
         'invoices.view' => [
             'label' => 'View quotes & invoices',
             'description' => 'Open the quotes/invoices list and detail pages.',

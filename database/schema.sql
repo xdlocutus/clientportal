@@ -89,6 +89,22 @@ CREATE TABLE services (
     KEY idx_services_status (company_id, status)
 ) ENGINE=InnoDB;
 
+
+CREATE TABLE products (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id INT UNSIGNED NOT NULL,
+    product_name VARCHAR(150) NOT NULL,
+    sku VARCHAR(80) DEFAULT NULL,
+    description TEXT DEFAULT NULL,
+    price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    status ENUM('active','inactive') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_products_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE CASCADE,
+    UNIQUE KEY uq_products_company_sku (company_id, sku),
+    KEY idx_products_company_status (company_id, status)
+) ENGINE=InnoDB;
+
 CREATE TABLE invoices (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id INT UNSIGNED NOT NULL,
@@ -117,6 +133,8 @@ CREATE TABLE invoice_items (
     quantity DECIMAL(12,2) NOT NULL DEFAULT 1.00,
     unit_price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     line_total DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    source_type ENUM('manual','product','service') NOT NULL DEFAULT 'manual',
+    source_id INT UNSIGNED DEFAULT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_invoice_items_invoice FOREIGN KEY (invoice_id) REFERENCES invoices (id) ON DELETE CASCADE,
