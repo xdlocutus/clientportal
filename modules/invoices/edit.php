@@ -7,6 +7,7 @@ require_once BASE_PATH . '/includes/auth.php';
 
 require_permission('invoices.edit');
 ensure_invoice_item_source_columns();
+ensure_invoice_item_description_capacity();
 $id = request_int('id');
 $stmt = db()->prepare('SELECT * FROM invoices WHERE id = :id AND ' . (is_super_admin() ? '1=1' : 'company_id = :company_id'));
 $stmt->execute(['id' => $id] + company_scope_params());
@@ -26,12 +27,14 @@ if (is_post()) {
     verify_csrf();
     $companyId = is_super_admin() ? request_int('company_id', (int) $invoice['company_id']) : (int) current_company_id();
     require_company_access($companyId);
+    $descriptionMaxLength = ensure_invoice_item_description_capacity();
     $normalized = normalize_invoice_items(
         $_POST['item_description'] ?? [],
         $_POST['item_quantity'] ?? [],
         $_POST['item_price'] ?? [],
         $_POST['item_source_type'] ?? [],
-        $_POST['item_source_id'] ?? []
+        $_POST['item_source_id'] ?? [],
+        $descriptionMaxLength
     );
     $newItems = $normalized['items'];
     $subtotal = $normalized['subtotal'];

@@ -324,7 +324,6 @@ function ensure_invoice_item_source_columns(): bool
     try {
         db()->query('SELECT source_type, source_id FROM invoice_items LIMIT 1');
         $available = true;
-        return true;
     } catch (PDOException) {
         try {
             db()->exec("ALTER TABLE invoice_items ADD COLUMN source_type VARCHAR(20) NOT NULL DEFAULT 'manual' AFTER line_total");
@@ -345,6 +344,56 @@ function ensure_invoice_item_source_columns(): bool
     }
 
     return $available;
+}
+
+function ensure_invoice_item_description_capacity(): ?int
+{
+    static $checked = false;
+    static $maxLength = null;
+
+    if ($checked) {
+        return $maxLength;
+    }
+
+    $checked = true;
+
+    try {
+        $descriptionColumn = db()->query("SHOW COLUMNS FROM invoice_items LIKE 'description'")->fetch();
+        if (!is_array($descriptionColumn)) {
+            return null;
+        }
+
+        $descriptionType = strtolower((string) ($descriptionColumn['Type'] ?? ''));
+        if ($descriptionType !== 'text') {
+            try {
+                db()->exec('ALTER TABLE invoice_items MODIFY COLUMN description TEXT NOT NULL');
+                $descriptionColumn = db()->query("SHOW COLUMNS FROM invoice_items LIKE 'description'")->fetch();
+                $descriptionType = strtolower((string) (($descriptionColumn['Type'] ?? '')));
+            } catch (PDOException) {
+            }
+        }
+
+        if (preg_match('/^(?:var)?char\((\d+)\)$/', $descriptionType, $matches) === 1) {
+            $maxLength = (int) $matches[1];
+        }
+    } catch (PDOException) {
+        $maxLength = null;
+    }
+
+    return $maxLength;
+}
+
+function trim_text_to_length(string $value, int $maxLength): string
+{
+    if ($maxLength < 1) {
+        return '';
+    }
+
+    if (function_exists('mb_substr')) {
+        return mb_substr($value, 0, $maxLength);
+    }
+
+    return substr($value, 0, $maxLength);
 }
 
 function product_select_options(?int $selected = null, ?int $companyId = null, bool $includeInactive = false): string
@@ -444,13 +493,16 @@ function invoice_catalog_items(?int $companyId = null): array
     return $catalog;
 }
 
-function normalize_invoice_items(array $descriptions, array $quantities, array $prices, array $sourceTypes = [], array $sourceIds = []): array
+function normalize_invoice_items(array $descriptions, array $quantities, array $prices, array $sourceTypes = [], array $sourceIds = [], ?int $descriptionMaxLength = null): array
 {
     $items = [];
     $subtotal = 0.0;
 
     foreach ($descriptions as $index => $description) {
         $description = trim((string) $description);
+        if ($descriptionMaxLength !== null && $descriptionMaxLength > 0) {
+            $description = trim(trim_text_to_length($description, $descriptionMaxLength));
+        }
         $quantity = (float) ($quantities[$index] ?? 0);
         $price = (float) ($prices[$index] ?? 0);
         if ($description === '') {
