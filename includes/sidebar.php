@@ -12,6 +12,9 @@ $navItems = [
     ['label' => 'Products', 'href' => '/modules/products/index.php', 'visible' => has_permission('products.view'), 'icon' => '⬡'],
     ['label' => 'Quotes', 'href' => '/modules/invoices/index.php', 'visible' => has_permission('invoices.view'), 'icon' => '◩'],
     ['label' => 'Tickets', 'href' => '/modules/tickets/index.php', 'visible' => has_permission('tickets.view'), 'icon' => '✉'],
+    ['label' => 'Reports', 'href' => '/modules/reports/index.php', 'visible' => has_permission('reports.view'), 'icon' => '▤'],
+    ['label' => 'Widgets', 'href' => '/modules/dashboard_widgets/index.php', 'visible' => has_permission('dashboard_widgets.manage'), 'icon' => '◧'],
+    ['label' => 'Exports', 'href' => '/modules/exports/index.php', 'visible' => has_permission('exports.view'), 'icon' => '⇩'],
     ['label' => 'Settings', 'href' => '/modules/settings/index.php', 'visible' => has_permission('settings.manage'), 'icon' => '⚙'],
 ];
 ?>

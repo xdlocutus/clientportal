@@ -107,6 +107,21 @@ function permission_catalog(): array
             'description' => 'Close open tickets.',
             'category' => 'Tickets',
         ],
+        'reports.view' => [
+            'label' => 'View reports',
+            'description' => 'Open custom sales, revenue, unpaid invoice, and ticket reports.',
+            'category' => 'Reporting',
+        ],
+        'dashboard_widgets.manage' => [
+            'label' => 'Manage dashboard widgets',
+            'description' => 'Choose which dashboard widgets each company sees.',
+            'category' => 'Reporting',
+        ],
+        'exports.view' => [
+            'label' => 'Export data',
+            'description' => 'Export invoices, tickets, and client lists as CSV or print/PDF views.',
+            'category' => 'Reporting',
+        ],
         'users.manage' => [
             'label' => 'Manage users',
             'description' => 'Create users and update team access.',
