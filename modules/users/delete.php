@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once BASE_PATH . '/includes/auth.php';
 
-require_role(['super_admin', 'company_admin']);
+require_permission('users.manage');
 $id = request_int('id');
 $params = ['id' => $id] + company_scope_params();
 $sql = 'DELETE FROM users WHERE id = :id';

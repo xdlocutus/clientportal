@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once BASE_PATH . '/includes/auth.php';
 
-require_staff();
+require_permission('invoices.create');
 if (is_post()) {
     verify_csrf();
     $companyId = is_super_admin() ? request_int('company_id') : (int) current_company_id();
@@ -62,13 +62,13 @@ if (is_post()) {
         throw $exception;
     }
 }
-$pageTitle = 'Create Invoice';
+$pageTitle = 'Create Quote';
 require BASE_PATH . '/includes/header.php';
 ?>
 <div class="card border-0 shadow-sm"><div class="card-body"><form method="post"><?= csrf_field() ?>
 <div class="row g-3 mb-3"><?php if (is_super_admin()): ?><div class="col-md-4"><label class="form-label">Tenant</label><select class="form-select" name="company_id" required><option value="">Select company</option><?= company_select_options() ?></select></div><?php endif; ?><div class="col-md-4"><label class="form-label">Client</label><select class="form-select" name="client_id" required><option value="">Select client</option><?= client_select_options() ?></select></div><div class="col-md-2"><label class="form-label">Invoice Date</label><input class="form-control" type="date" name="invoice_date" value="<?= date('Y-m-d') ?>"></div><div class="col-md-2"><label class="form-label">Due Date</label><input class="form-control" type="date" name="due_date" value="<?= date('Y-m-d') ?>"></div><div class="col-md-3"><label class="form-label">Status</label><select class="form-select" name="status"><?php foreach (['draft','sent','unpaid','paid','overdue','cancelled'] as $status): ?><option value="<?= h($status) ?>"><?= h(ucfirst($status)) ?></option><?php endforeach; ?></select></div></div>
 <h2 class="h5">Line Items</h2>
 <?php for ($i = 0; $i < 3; $i++): ?><div class="row g-3 mb-2"><div class="col-md-6"><input class="form-control" name="item_description[]" placeholder="Description"></div><div class="col-md-2"><input class="form-control" type="number" step="0.01" name="item_quantity[]" placeholder="Qty"></div><div class="col-md-2"><input class="form-control" type="number" step="0.01" name="item_price[]" placeholder="Unit Price"></div></div><?php endfor; ?>
-<div class="row g-3 mt-3"><div class="col-md-3"><label class="form-label">Tax</label><input class="form-control" type="number" step="0.01" name="tax_amount" value="0"></div><div class="col-md-3"><label class="form-label">Discount</label><input class="form-control" type="number" step="0.01" name="discount_amount" value="0"></div><div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" name="notes" rows="4"></textarea></div><div class="col-12"><button class="btn btn-primary">Save Invoice</button> <a class="btn btn-link" href="/modules/invoices/index.php">Cancel</a></div></div>
+<div class="row g-3 mt-3"><div class="col-md-3"><label class="form-label">Tax</label><input class="form-control" type="number" step="0.01" name="tax_amount" value="0"></div><div class="col-md-3"><label class="form-label">Discount</label><input class="form-control" type="number" step="0.01" name="discount_amount" value="0"></div><div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" name="notes" rows="4"></textarea></div><div class="col-12"><button class="btn btn-primary">Save Quote</button> <a class="btn btn-link" href="/modules/invoices/index.php">Cancel</a></div></div>
 </form></div></div>
 <?php require BASE_PATH . '/includes/footer.php'; ?>
