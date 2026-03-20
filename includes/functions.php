@@ -216,6 +216,9 @@ function invoice_status_badge(string $status): string
         'unpaid' => 'warning',
         'open' => 'primary',
         'closed' => 'secondary',
+        'active' => 'success',
+        'inactive' => 'secondary',
+        'suspended' => 'warning',
     ];
 
     $class = $classes[$status] ?? 'secondary';
@@ -262,6 +265,216 @@ function client_select_options(?int $selected = null, ?int $companyId = null): s
     }
 
     return $html;
+}
+
+
+function products_storage_available(): bool
+{
+    static $checked = false;
+    static $available = false;
+
+    if ($checked) {
+        return $available;
+    }
+
+    $checked = true;
+
+    try {
+        db()->query('SELECT 1 FROM products LIMIT 1');
+        $available = true;
+        return true;
+    } catch (PDOException) {
+        try {
+            db()->exec(
+                "CREATE TABLE IF NOT EXISTS products (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    company_id INT UNSIGNED NOT NULL,
+                    product_name VARCHAR(150) NOT NULL,
+                    sku VARCHAR(80) DEFAULT NULL,
+                    description TEXT DEFAULT NULL,
+                    price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                    status ENUM('active','inactive') NOT NULL DEFAULT 'active',
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_products_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE CASCADE,
+                    UNIQUE KEY uq_products_company_sku (company_id, sku),
+                    KEY idx_products_company_status (company_id, status)
+                ) ENGINE=InnoDB"
+            );
+            $available = true;
+        } catch (PDOException) {
+            $available = false;
+        }
+    }
+
+    return $available;
+}
+
+function ensure_invoice_item_source_columns(): bool
+{
+    static $checked = false;
+    static $available = false;
+
+    if ($checked) {
+        return $available;
+    }
+
+    $checked = true;
+
+    try {
+        db()->query('SELECT source_type, source_id FROM invoice_items LIMIT 1');
+        $available = true;
+        return true;
+    } catch (PDOException) {
+        try {
+            db()->exec("ALTER TABLE invoice_items ADD COLUMN source_type VARCHAR(20) NOT NULL DEFAULT 'manual' AFTER line_total");
+        } catch (PDOException) {
+        }
+
+        try {
+            db()->exec('ALTER TABLE invoice_items ADD COLUMN source_id INT UNSIGNED DEFAULT NULL AFTER source_type');
+        } catch (PDOException) {
+        }
+
+        try {
+            db()->query('SELECT source_type, source_id FROM invoice_items LIMIT 1');
+            $available = true;
+        } catch (PDOException) {
+            $available = false;
+        }
+    }
+
+    return $available;
+}
+
+function product_select_options(?int $selected = null, ?int $companyId = null, bool $includeInactive = false): string
+{
+    if (!products_storage_available()) {
+        return '';
+    }
+
+    $params = [];
+    $sql = 'SELECT id, product_name, sku, status FROM products WHERE 1=1';
+
+    if ($companyId) {
+        $sql .= ' AND company_id = :company_id';
+        $params['company_id'] = $companyId;
+    } elseif (!is_super_admin()) {
+        $sql .= ' AND company_id = :company_id';
+        $params['company_id'] = current_company_id();
+    }
+
+    if (!$includeInactive) {
+        $sql .= " AND status = 'active'";
+    }
+
+    $sql .= ' ORDER BY product_name';
+
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+
+    $html = '';
+    foreach ($stmt->fetchAll() as $product) {
+        $label = $product['product_name'];
+        if ((string) $product['sku'] !== '') {
+            $label .= ' (' . $product['sku'] . ')';
+        }
+        $isSelected = $selected === (int) $product['id'] ? ' selected' : '';
+        $html .= '<option value="' . (int) $product['id'] . '"' . $isSelected . '>' . h($label) . '</option>';
+    }
+
+    return $html;
+}
+
+function invoice_catalog_items(?int $companyId = null): array
+{
+    $companyId = $companyId ?: (is_super_admin() ? null : (int) current_company_id());
+    $catalog = [];
+
+    if (products_storage_available()) {
+        $params = [];
+        $sql = "SELECT id, company_id, product_name, sku, description, price, status FROM products WHERE status = 'active'";
+        if ($companyId) {
+            $sql .= ' AND company_id = :company_id';
+            $params['company_id'] = $companyId;
+        }
+        $sql .= ' ORDER BY product_name';
+        $stmt = db()->prepare($sql);
+        $stmt->execute($params);
+        foreach ($stmt->fetchAll() as $product) {
+            $catalog[] = [
+                'type' => 'product',
+                'id' => (int) $product['id'],
+                'company_id' => (int) $product['company_id'],
+                'client_id' => null,
+                'name' => $product['product_name'],
+                'description' => $product['description'] !== null && trim((string) $product['description']) !== ''
+                    ? trim((string) $product['description'])
+                    : trim((string) $product['product_name'] . (((string) $product['sku'] !== '') ? ' (' . $product['sku'] . ')' : '')),
+                'price' => (float) $product['price'],
+                'meta' => (string) $product['sku'],
+            ];
+        }
+    }
+
+    $params = [];
+    $sql = "SELECT id, company_id, client_id, service_name, description, price, billing_cycle, status FROM services WHERE status = 'active'";
+    if ($companyId) {
+        $sql .= ' AND company_id = :company_id';
+        $params['company_id'] = $companyId;
+    }
+    $sql .= ' ORDER BY service_name';
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+    foreach ($stmt->fetchAll() as $service) {
+        $catalog[] = [
+            'type' => 'service',
+            'id' => (int) $service['id'],
+            'company_id' => (int) $service['company_id'],
+            'client_id' => (int) $service['client_id'],
+            'name' => $service['service_name'],
+            'description' => $service['description'] !== null && trim((string) $service['description']) !== ''
+                ? trim((string) $service['description'])
+                : trim((string) $service['service_name'] . ' (' . ucfirst(str_replace('_', ' ', (string) $service['billing_cycle'])) . ')'),
+            'price' => (float) $service['price'],
+            'meta' => (string) $service['billing_cycle'],
+        ];
+    }
+
+    return $catalog;
+}
+
+function normalize_invoice_items(array $descriptions, array $quantities, array $prices, array $sourceTypes = [], array $sourceIds = []): array
+{
+    $items = [];
+    $subtotal = 0.0;
+
+    foreach ($descriptions as $index => $description) {
+        $description = trim((string) $description);
+        $quantity = (float) ($quantities[$index] ?? 0);
+        $price = (float) ($prices[$index] ?? 0);
+        if ($description === '') {
+            continue;
+        }
+
+        $lineTotal = $quantity * $price;
+        $subtotal += $lineTotal;
+        $sourceType = (string) ($sourceTypes[$index] ?? 'manual');
+        if (!in_array($sourceType, ['manual', 'product', 'service'], true)) {
+            $sourceType = 'manual';
+        }
+        $sourceId = (int) ($sourceIds[$index] ?? 0);
+        $items[] = [
+            'description' => $description,
+            'quantity' => $quantity,
+            'unit_price' => $price,
+            'line_total' => $lineTotal,
+            'source_type' => $sourceType,
+            'source_id' => $sourceType === 'manual' || $sourceId < 1 ? null : $sourceId,
+        ];
+    }
+
+    return ['items' => $items, 'subtotal' => $subtotal];
 }
 
 function user_select_options(?int $selected = null, array $roles = []): string
