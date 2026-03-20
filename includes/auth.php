@@ -98,9 +98,51 @@ function normalize_permissions(array $permissions): array
     return $normalized;
 }
 
+function permissions_storage_available(): bool
+{
+    static $checked = false;
+    static $available = false;
+
+    if ($checked) {
+        return $available;
+    }
+
+    $checked = true;
+
+    try {
+        db()->query('SELECT 1 FROM user_permissions LIMIT 1');
+        $available = true;
+        return true;
+    } catch (PDOException) {
+        try {
+            db()->exec(
+                'CREATE TABLE IF NOT EXISTS user_permissions (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT UNSIGNED NOT NULL,
+                    permission_key VARCHAR(120) NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_user_permissions_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                    UNIQUE KEY uq_user_permission (user_id, permission_key),
+                    KEY idx_user_permissions_key (permission_key)
+                ) ENGINE=InnoDB'
+            );
+            $available = true;
+        } catch (PDOException) {
+            $available = false;
+        }
+    }
+
+    return $available;
+}
+
 function load_user_permissions(array $user): array
 {
     if (in_array($user['role'], ['super_admin', 'company_admin'], true)) {
+        return default_permissions_for_role($user['role']);
+    }
+
+    if (!permissions_storage_available()) {
         return default_permissions_for_role($user['role']);
     }
 
@@ -115,6 +157,10 @@ function sync_user_permissions(int $userId, string $role, array $permissions): a
     $permissions = in_array($role, ['super_admin', 'company_admin'], true)
         ? default_permissions_for_role($role)
         : normalize_permissions($permissions);
+
+    if (!permissions_storage_available()) {
+        return $permissions;
+    }
 
     $delete = db()->prepare('DELETE FROM user_permissions WHERE user_id = :user_id');
     $delete->execute(['user_id' => $userId]);
