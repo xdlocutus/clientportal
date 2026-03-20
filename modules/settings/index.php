@@ -58,7 +58,13 @@ $companyBranding = portal_branding($companyId);
 require BASE_PATH . '/includes/header.php';
 ?>
 <div class="card border-0 shadow-sm"><div class="card-body">
-<h1 class="h3 mb-3">Settings for <?= h($company['name']) ?></h1>
+<div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3 mb-3">
+<div>
+<h1 class="h3 mb-1">Settings for <?= h($company['name']) ?></h1>
+<p class="text-body-secondary mb-0">Manage branding, billing defaults, and company-wide workspace preferences.</p>
+</div>
+<?php if (has_permission('dashboard_widgets.manage')): ?><a class="btn btn-outline-secondary" href="/modules/dashboard_widgets/index.php<?= is_super_admin() ? '?company_id=' . $companyId : '' ?>">Dashboard widgets</a><?php endif; ?>
+</div>
 <form method="post" class="row g-3"><?= csrf_field() ?>
 <?php if (is_super_admin()): ?><div class="col-md-6"><label class="form-label">Company</label><select class="form-select" onchange="window.location='?company_id='+this.value"><option value="">Select company</option><?php $companies = db()->query('SELECT id, name FROM companies ORDER BY name')->fetchAll(); foreach ($companies as $tenant): ?><option value="<?= (int) $tenant['id'] ?>" <?= $companyId === (int) $tenant['id'] ? 'selected' : '' ?>><?= h($tenant['name']) ?></option><?php endforeach; ?></select></div><?php endif; ?>
 <div class="col-md-6"><label class="form-label">Company Name</label><input class="form-control" name="company_name" value="<?= h($current['company_name']) ?>"></div>

@@ -8,8 +8,11 @@ Business Portal is a modular multi-tenant PHP 8+ web application for client mana
 - Role-based access for `super_admin`, `company_admin`, `company_staff`, and `client`.
 - PDO + prepared statements throughout.
 - Bootstrap 5 admin layout with sidebar, topbar, flash messages, and CRUD forms.
-- Dashboard with tenant-filtered statistics.
+- Dashboard with tenant-filtered statistics and company-configurable widgets.
+- Custom reports for sales, revenue per client, unpaid invoices, and ticket statistics.
+- CSV exports and print / PDF-ready exports for invoices, tickets, and client lists.
 - Client portal access for invoices and support tickets.
+
 
 ## Installation Guide
 
