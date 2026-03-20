@@ -53,17 +53,73 @@ $recentTickets = $ticketStmt->fetchAll();
 $pageTitle = 'Dashboard';
 require BASE_PATH . '/includes/header.php';
 ?>
+<section class="hero-panel mb-4">
+    <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-4">
+        <div>
+            <span class="eyebrow-label">Overview</span>
+            <h2 class="h3 mb-2 mt-2">Everything important, at a glance.</h2>
+            <p class="mb-0 text-body-secondary">Track client growth, unpaid invoices, and active support work from a single modernized dashboard.</p>
+        </div>
+        <div class="quick-actions">
+            <?php if (has_role(['super_admin', 'company_admin', 'company_staff'])): ?>
+                <a class="btn btn-primary" href="/modules/clients/add.php">Add client</a>
+                <a class="btn btn-outline-secondary" href="/modules/services/add.php">Add service</a>
+            <?php endif; ?>
+            <a class="btn btn-outline-secondary" href="/modules/tickets/add.php">Open ticket</a>
+        </div>
+    </div>
+</section>
 <div class="row g-4 mb-4">
-    <div class="col-md-3"><div class="card card-stat"><div class="card-body"><div class="text-muted">Clients</div><div class="display-6"><?= $counts['clients'] ?></div></div></div></div>
-    <div class="col-md-3"><div class="card card-stat"><div class="card-body"><div class="text-muted">Services</div><div class="display-6"><?= $counts['services'] ?></div></div></div></div>
-    <div class="col-md-3"><div class="card card-stat"><div class="card-body"><div class="text-muted">Unpaid Invoices</div><div class="display-6"><?= $counts['unpaid_invoices'] ?></div></div></div></div>
-    <div class="col-md-3"><div class="card card-stat"><div class="card-body"><div class="text-muted">Open Tickets</div><div class="display-6"><?= $counts['open_tickets'] ?></div></div></div></div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card card-stat">
+            <div class="card-body">
+                <div class="stat-label">Clients</div>
+                <div class="d-flex align-items-end justify-content-between gap-3">
+                    <div class="display-6 mb-0"><?= $counts['clients'] ?></div>
+                    <span class="stat-icon">◎</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card card-stat">
+            <div class="card-body">
+                <div class="stat-label">Services</div>
+                <div class="d-flex align-items-end justify-content-between gap-3">
+                    <div class="display-6 mb-0"><?= $counts['services'] ?></div>
+                    <span class="stat-icon">✦</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card card-stat">
+            <div class="card-body">
+                <div class="stat-label">Unpaid Invoices</div>
+                <div class="d-flex align-items-end justify-content-between gap-3">
+                    <div class="display-6 mb-0"><?= $counts['unpaid_invoices'] ?></div>
+                    <span class="stat-icon">◩</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card card-stat">
+            <div class="card-body">
+                <div class="stat-label">Open Tickets</div>
+                <div class="d-flex align-items-end justify-content-between gap-3">
+                    <div class="display-6 mb-0"><?= $counts['open_tickets'] ?></div>
+                    <span class="stat-icon">✉</span>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-4">
     <div class="col-lg-6">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white"><strong>Recent Invoices</strong></div>
+        <div class="card border-0 shadow-sm surface-card h-100">
+            <div class="card-header bg-transparent border-0 pt-4 px-4"><strong>Recent Invoices</strong></div>
             <div class="table-responsive">
                 <table class="table table-striped mb-0">
                     <thead><tr><th>#</th><th>Client</th><th>Total</th><th>Status</th></tr></thead>
@@ -83,8 +139,8 @@ require BASE_PATH . '/includes/header.php';
         </div>
     </div>
     <div class="col-lg-6">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white"><strong>Recent Tickets</strong></div>
+        <div class="card border-0 shadow-sm surface-card h-100">
+            <div class="card-header bg-transparent border-0 pt-4 px-4"><strong>Recent Tickets</strong></div>
             <div class="table-responsive">
                 <table class="table table-striped mb-0">
                     <thead><tr><th>Subject</th><th>Client</th><th>Priority</th><th>Status</th></tr></thead>
