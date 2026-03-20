@@ -120,6 +120,130 @@ function setting(string $key, string $default = ''): string
     return $settings[$key] ?? $default;
 }
 
+function setting_array(string $key, array $default = []): array
+{
+    $raw = trim(setting($key, ''));
+    if ($raw === '') {
+        return $default;
+    }
+
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        return $default;
+    }
+
+    $values = [];
+    foreach ($decoded as $value) {
+        if (is_string($value) && $value !== '') {
+            $values[] = $value;
+        }
+    }
+
+    return array_values(array_unique($values));
+}
+
+function dashboard_widget_catalog(): array
+{
+    return [
+        'stats.clients' => [
+            'label' => 'Clients total',
+            'description' => 'Show the total number of clients.',
+            'group' => 'Stat cards',
+            'permission' => 'clients.view',
+        ],
+        'stats.services' => [
+            'label' => 'Services total',
+            'description' => 'Show the total number of services.',
+            'group' => 'Stat cards',
+            'permission' => 'services.view',
+        ],
+        'stats.products' => [
+            'label' => 'Products total',
+            'description' => 'Show the total number of products.',
+            'group' => 'Stat cards',
+            'permission' => 'products.view',
+        ],
+        'stats.unpaid_invoices' => [
+            'label' => 'Open invoices',
+            'description' => 'Show the number of draft, sent, unpaid, and overdue invoices.',
+            'group' => 'Stat cards',
+            'permission' => 'invoices.view',
+        ],
+        'stats.open_tickets' => [
+            'label' => 'Open tickets',
+            'description' => 'Show the number of open support tickets.',
+            'group' => 'Stat cards',
+            'permission' => 'tickets.view',
+        ],
+        'panel.recent_invoices' => [
+            'label' => 'Recent invoices',
+            'description' => 'List the latest quotes and invoices.',
+            'group' => 'Insight panels',
+            'permission' => 'invoices.view',
+        ],
+        'panel.recent_tickets' => [
+            'label' => 'Recent tickets',
+            'description' => 'List the latest support tickets.',
+            'group' => 'Insight panels',
+            'permission' => 'tickets.view',
+        ],
+        'panel.top_clients' => [
+            'label' => 'Top clients',
+            'description' => 'Rank clients by billed revenue.',
+            'group' => 'Insight panels',
+            'permission' => 'invoices.view',
+        ],
+        'panel.overdue_invoices' => [
+            'label' => 'Overdue invoices',
+            'description' => 'Highlight invoices that need follow-up.',
+            'group' => 'Insight panels',
+            'permission' => 'invoices.view',
+        ],
+        'panel.active_services' => [
+            'label' => 'Active services',
+            'description' => 'Show currently active services and their clients.',
+            'group' => 'Insight panels',
+            'permission' => 'services.view',
+        ],
+    ];
+}
+
+function default_dashboard_widgets(): array
+{
+    return array_keys(dashboard_widget_catalog());
+}
+
+function enabled_dashboard_widgets(): array
+{
+    $widgets = setting_array('dashboard_widgets', default_dashboard_widgets());
+    $catalog = dashboard_widget_catalog();
+    $enabled = [];
+
+    foreach ($widgets as $widget) {
+        if (!isset($catalog[$widget])) {
+            continue;
+        }
+
+        $permission = $catalog[$widget]['permission'] ?? null;
+        if ($permission !== null && !has_permission($permission)) {
+            continue;
+        }
+
+        if ($widget === 'stats.products' && !products_storage_available()) {
+            continue;
+        }
+
+        $enabled[] = $widget;
+    }
+
+    return array_values(array_unique($enabled));
+}
+
+function dashboard_widget_enabled(string $widgetKey): bool
+{
+    return in_array($widgetKey, enabled_dashboard_widgets(), true);
+}
+
 function normalize_hex_color(?string $value, string $default = '#4f46e5'): string
 {
     $candidate = strtoupper(trim((string) $value));
