@@ -65,6 +65,28 @@ if (has_permission('tickets.view')) {
     $recentTickets = $ticketStmt->fetchAll();
 }
 
+
+$requestedModules = [
+    [
+        'icon' => '▤',
+        'title' => 'Custom Reports Module',
+        'summary' => 'Build deeper reporting views for finance and operations teams.',
+        'examples' => ['Sales reports', 'Revenue per client', 'Unpaid invoices', 'Ticket stats'],
+    ],
+    [
+        'icon' => '◧',
+        'title' => 'Dashboard Widgets Module',
+        'summary' => 'Let each company tailor the dashboard to the KPIs and lists they care about most.',
+        'examples' => ['Top clients', 'Overdue invoices', 'Active services'],
+    ],
+    [
+        'icon' => '⇩',
+        'title' => 'Export / CSV / PDF Module',
+        'summary' => 'Support downloadable exports for finance reviews, audits, and handoffs.',
+        'examples' => ['Export invoices', 'Export tickets', 'Export client lists'],
+    ],
+];
+
 $pageTitle = 'Dashboard';
 $branding = portal_branding();
 require BASE_PATH . '/includes/header.php';
@@ -161,4 +183,33 @@ require BASE_PATH . '/includes/header.php';
         </div>
     <?php endif; ?>
 </div>
+
+<div class="mt-4">
+    <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3 mb-3">
+        <div>
+            <span class="eyebrow-label">Next up</span>
+            <h2 class="h4 mb-1 mt-2">Requested modules</h2>
+            <p class="text-body-secondary mb-0">Additional modules requested for reporting, personalization, and data exports.</p>
+        </div>
+    </div>
+    <div class="row g-4">
+        <?php foreach ($requestedModules as $module): ?>
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm surface-card h-100 requested-module-card">
+                    <div class="card-body p-4">
+                        <div class="requested-module-icon mb-3"><?= h($module['icon']) ?></div>
+                        <h3 class="h5 mb-2"><?= h($module['title']) ?></h3>
+                        <p class="text-body-secondary mb-3"><?= h($module['summary']) ?></p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <?php foreach ($module['examples'] as $example): ?>
+                                <span class="requested-module-pill"><?= h($example) ?></span>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
 <?php require BASE_PATH . '/includes/footer.php'; ?>
