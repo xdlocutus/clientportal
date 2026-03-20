@@ -7,18 +7,21 @@ require_once BASE_PATH . '/includes/auth.php';
 
 require_permission('invoices.create');
 ensure_invoice_item_source_columns();
+ensure_invoice_item_description_capacity();
 $catalogItems = invoice_catalog_items();
 if (is_post()) {
     verify_csrf();
     $companyId = is_super_admin() ? request_int('company_id') : (int) current_company_id();
     require_company_access($companyId);
     $clientId = request_int('client_id');
+    $descriptionMaxLength = ensure_invoice_item_description_capacity();
     $normalized = normalize_invoice_items(
         $_POST['item_description'] ?? [],
         $_POST['item_quantity'] ?? [],
         $_POST['item_price'] ?? [],
         $_POST['item_source_type'] ?? [],
-        $_POST['item_source_id'] ?? []
+        $_POST['item_source_id'] ?? [],
+        $descriptionMaxLength
     );
     $items = $normalized['items'];
     $subtotal = $normalized['subtotal'];
