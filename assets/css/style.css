@@ -377,3 +377,31 @@ a {
         display: none;
     }
 }
+
+.requested-module-card {
+    overflow: hidden;
+}
+
+.requested-module-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 1rem;
+    background: rgba(var(--portal-primary-rgb), 0.12);
+    color: var(--portal-primary);
+    font-size: 1.25rem;
+}
+
+.requested-module-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(var(--portal-primary-rgb), 0.08);
+    color: var(--portal-text);
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
