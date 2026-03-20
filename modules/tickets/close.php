@@ -5,7 +5,11 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once BASE_PATH . '/includes/auth.php';
 
-require_role(['super_admin', 'company_admin', 'company_staff']);
+require_permission('tickets.manage');
+if (is_client_role()) {
+    set_flash('danger', 'Clients cannot close tickets.');
+    redirect('/modules/tickets/index.php');
+}
 $id = request_int('id');
 $sql = 'UPDATE tickets SET status = :status, updated_at = NOW() WHERE id = :id';
 $params = ['id' => $id, 'status' => 'closed'];

@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once BASE_PATH . '/includes/auth.php';
 
-require_staff();
+require_permission('invoices.manage');
 $id = request_int('id');
 $stmt = db()->prepare('SELECT * FROM invoices WHERE id = :id AND ' . (is_super_admin() ? '1=1' : 'company_id = :company_id'));
 $stmt->execute(['id' => $id] + company_scope_params());
@@ -68,13 +68,13 @@ if (is_post()) {
         throw $exception;
     }
 }
-$pageTitle = 'Edit Invoice';
+$pageTitle = 'Edit Quote';
 require BASE_PATH . '/includes/header.php';
 ?>
 <div class="card border-0 shadow-sm"><div class="card-body"><form method="post"><?= csrf_field() ?>
 <div class="row g-3 mb-3"><?php if (is_super_admin()): ?><div class="col-md-4"><label class="form-label">Tenant</label><select class="form-select" name="company_id" required><?= company_select_options((int) $invoice['company_id']) ?></select></div><?php endif; ?><div class="col-md-4"><label class="form-label">Client</label><select class="form-select" name="client_id" required><?= client_select_options((int) $invoice['client_id'], (int) $invoice['company_id']) ?></select></div><div class="col-md-2"><label class="form-label">Invoice Date</label><input class="form-control" type="date" name="invoice_date" value="<?= h($invoice['invoice_date']) ?>"></div><div class="col-md-2"><label class="form-label">Due Date</label><input class="form-control" type="date" name="due_date" value="<?= h($invoice['due_date']) ?>"></div><div class="col-md-3"><label class="form-label">Status</label><select class="form-select" name="status"><?php foreach (['draft','sent','unpaid','paid','overdue','cancelled'] as $status): ?><option value="<?= h($status) ?>" <?= $invoice['status'] === $status ? 'selected' : '' ?>><?= h(ucfirst($status)) ?></option><?php endforeach; ?></select></div></div>
 <h2 class="h5">Line Items</h2>
 <?php $rows = max(3, count($items)); for ($i = 0; $i < $rows; $i++): $item = $items[$i] ?? ['description'=>'','quantity'=>'','unit_price'=>'']; ?><div class="row g-3 mb-2"><div class="col-md-6"><input class="form-control" name="item_description[]" value="<?= h($item['description']) ?>" placeholder="Description"></div><div class="col-md-2"><input class="form-control" type="number" step="0.01" name="item_quantity[]" value="<?= h((string) $item['quantity']) ?>" placeholder="Qty"></div><div class="col-md-2"><input class="form-control" type="number" step="0.01" name="item_price[]" value="<?= h((string) $item['unit_price']) ?>" placeholder="Unit Price"></div></div><?php endfor; ?>
-<div class="row g-3 mt-3"><div class="col-md-3"><label class="form-label">Tax</label><input class="form-control" type="number" step="0.01" name="tax_amount" value="<?= h((string) $invoice['tax_amount']) ?>"></div><div class="col-md-3"><label class="form-label">Discount</label><input class="form-control" type="number" step="0.01" name="discount_amount" value="<?= h((string) $invoice['discount_amount']) ?>"></div><div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" name="notes" rows="4"><?= h($invoice['notes']) ?></textarea></div><div class="col-12"><button class="btn btn-primary">Update Invoice</button> <a class="btn btn-link" href="/modules/invoices/index.php">Cancel</a></div></div>
+<div class="row g-3 mt-3"><div class="col-md-3"><label class="form-label">Tax</label><input class="form-control" type="number" step="0.01" name="tax_amount" value="<?= h((string) $invoice['tax_amount']) ?>"></div><div class="col-md-3"><label class="form-label">Discount</label><input class="form-control" type="number" step="0.01" name="discount_amount" value="<?= h((string) $invoice['discount_amount']) ?>"></div><div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" name="notes" rows="4"><?= h($invoice['notes']) ?></textarea></div><div class="col-12"><button class="btn btn-primary">Update Quote</button> <a class="btn btn-link" href="/modules/invoices/index.php">Cancel</a></div></div>
 </form></div></div>
 <?php require BASE_PATH . '/includes/footer.php'; ?>

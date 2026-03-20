@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once BASE_PATH . '/includes/auth.php';
 
-require_login();
+require_permission('invoices.view');
 $id = request_int('id');
 $sql = 'SELECT invoices.*, clients.company_name, clients.contact_name, clients.email
         FROM invoices
@@ -25,7 +25,7 @@ if (!$invoice) {
 $itemStmt = db()->prepare('SELECT * FROM invoice_items WHERE invoice_id = :invoice_id ORDER BY id');
 $itemStmt->execute(['invoice_id' => $id]);
 $items = $itemStmt->fetchAll();
-$pageTitle = 'Invoice Details';
+$pageTitle = 'Quote Details';
 require BASE_PATH . '/includes/header.php';
 ?>
 <div class="card border-0 shadow-sm"><div class="card-body">

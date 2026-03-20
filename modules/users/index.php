@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once BASE_PATH . '/includes/auth.php';
 
-require_role(['super_admin', 'company_admin']);
+require_permission('users.manage');
 
 $sql = 'SELECT users.*, companies.name AS company_name, clients.company_name AS client_name
         FROM users
@@ -26,13 +26,14 @@ require BASE_PATH . '/includes/header.php';
 </div>
 <div class="card border-0 shadow-sm"><div class="table-responsive">
 <table class="table table-striped mb-0">
-    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Company</th><th>Client</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Permissions</th><th>Company</th><th>Client</th><th>Status</th><th></th></tr></thead>
     <tbody>
     <?php foreach ($users as $user): ?>
         <tr>
             <td><?= h($user['full_name']) ?></td>
             <td><?= h($user['email']) ?></td>
-            <td><?= h($user['role']) ?></td>
+            <td><?= h(ucwords(str_replace('_', ' ', $user['role']))) ?></td>
+            <td class="small"><?= h(permissions_summary(load_user_permissions($user))) ?></td>
             <td><?= h($user['company_name']) ?></td>
             <td><?= h($user['client_name']) ?></td>
             <td><?= $user['is_active'] ? 'Active' : 'Inactive' ?></td>
