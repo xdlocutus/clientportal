@@ -343,6 +343,14 @@ function invoice_status_badge(string $status): string
         'active' => 'success',
         'inactive' => 'secondary',
         'suspended' => 'warning',
+        'scheduled' => 'info',
+        'in_progress' => 'primary',
+        'completed' => 'success',
+        'on_hold' => 'warning',
+        'low' => 'secondary',
+        'medium' => 'info',
+        'high' => 'warning',
+        'urgent' => 'danger',
     ];
 
     $class = $classes[$status] ?? 'secondary';
@@ -361,6 +369,183 @@ function company_select_options(?int $selected = null): string
         $isSelected = $selected === (int) $company['id'] ? ' selected' : '';
         $html .= '<option value="' . (int) $company['id'] . '"' . $isSelected . '>' . h($company['name']) . '</option>';
     }
+    return $html;
+}
+
+
+function normalize_datetime_input(?string $value): ?string
+{
+    $value = trim((string) $value);
+    if ($value === '') {
+        return null;
+    }
+
+    $value = str_replace('T', ' ', $value);
+    if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $value) === 1) {
+        $value .= ':00';
+    }
+
+    return preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $value) === 1 ? $value : null;
+}
+
+function format_datetime_local(?string $value): string
+{
+    $value = trim((string) $value);
+    if ($value === '') {
+        return '';
+    }
+
+    try {
+        return (new DateTimeImmutable($value))->format('Y-m-d\TH:i');
+    } catch (Throwable) {
+        return '';
+    }
+}
+
+function format_datetime_display(?string $value): string
+{
+    $value = trim((string) $value);
+    if ($value === '') {
+        return '—';
+    }
+
+    try {
+        return (new DateTimeImmutable($value))->format('j M Y g:i A');
+    } catch (Throwable) {
+        return $value;
+    }
+}
+
+function jobs_storage_available(): bool
+{
+    static $checked = false;
+    static $available = false;
+
+    if ($checked) {
+        return $available;
+    }
+
+    $checked = true;
+
+    try {
+        db()->query('SELECT 1 FROM jobcards LIMIT 1');
+        $available = true;
+        return true;
+    } catch (PDOException) {
+        try {
+            db()->exec(
+                "CREATE TABLE IF NOT EXISTS jobcards (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    company_id INT UNSIGNED NOT NULL,
+                    client_id INT UNSIGNED NOT NULL,
+                    created_by_user_id INT UNSIGNED NOT NULL,
+                    assigned_user_id INT UNSIGNED DEFAULT NULL,
+                    job_number VARCHAR(50) NOT NULL,
+                    title VARCHAR(190) NOT NULL,
+                    job_type VARCHAR(120) DEFAULT NULL,
+                    scheduled_for DATETIME NOT NULL,
+                    status ENUM('scheduled','in_progress','completed','on_hold','cancelled') NOT NULL DEFAULT 'scheduled',
+                    priority ENUM('low','medium','high','urgent') NOT NULL DEFAULT 'medium',
+                    site_contact_name VARCHAR(150) DEFAULT NULL,
+                    site_contact_phone VARCHAR(50) DEFAULT NULL,
+                    service_address TEXT DEFAULT NULL,
+                    scope_of_work TEXT DEFAULT NULL,
+                    access_instructions TEXT DEFAULT NULL,
+                    materials_required TEXT DEFAULT NULL,
+                    internal_notes TEXT DEFAULT NULL,
+                    client_signature_name VARCHAR(150) DEFAULT NULL,
+                    client_signature_notes TEXT DEFAULT NULL,
+                    client_signed_at DATETIME DEFAULT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_jobcards_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE CASCADE,
+                    CONSTRAINT fk_jobcards_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE,
+                    CONSTRAINT fk_jobcards_created_by_user FOREIGN KEY (created_by_user_id) REFERENCES users (id) ON DELETE CASCADE,
+                    CONSTRAINT fk_jobcards_assigned_user FOREIGN KEY (assigned_user_id) REFERENCES users (id) ON DELETE SET NULL,
+                    UNIQUE KEY uq_jobcards_company_number (company_id, job_number),
+                    KEY idx_jobcards_company_client_status (company_id, client_id, status),
+                    KEY idx_jobcards_assigned_user (assigned_user_id),
+                    KEY idx_jobcards_scheduled_for (company_id, scheduled_for)
+                ) ENGINE=InnoDB"
+            );
+            $available = true;
+        } catch (PDOException) {
+            $available = false;
+        }
+    }
+
+    return $available;
+}
+
+function jobcard_notes_storage_available(): bool
+{
+    static $checked = false;
+    static $available = false;
+
+    if ($checked) {
+        return $available;
+    }
+
+    $checked = true;
+
+    if (!jobs_storage_available()) {
+        return false;
+    }
+
+    try {
+        db()->query('SELECT 1 FROM jobcard_notes LIMIT 1');
+        $available = true;
+        return true;
+    } catch (PDOException) {
+        try {
+            db()->exec(
+                "CREATE TABLE IF NOT EXISTS jobcard_notes (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    jobcard_id INT UNSIGNED NOT NULL,
+                    user_id INT UNSIGNED NOT NULL,
+                    note TEXT NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_jobcard_notes_jobcard FOREIGN KEY (jobcard_id) REFERENCES jobcards (id) ON DELETE CASCADE,
+                    CONSTRAINT fk_jobcard_notes_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                    KEY idx_jobcard_notes_jobcard (jobcard_id),
+                    KEY idx_jobcard_notes_user (user_id)
+                ) ENGINE=InnoDB"
+            );
+            $available = true;
+        } catch (PDOException) {
+            $available = false;
+        }
+    }
+
+    return $available;
+}
+
+function technician_select_options(?int $selected = null, ?int $companyId = null): string
+{
+    $params = [];
+    $sql = "SELECT id, full_name, role FROM users WHERE role IN ('company_admin','company_staff') AND is_active = 1";
+
+    if ($companyId) {
+        $sql .= ' AND company_id = :company_id';
+        $params['company_id'] = $companyId;
+    } elseif (!is_super_admin()) {
+        $sql .= ' AND company_id = :company_id';
+        $params['company_id'] = current_company_id();
+    }
+
+    $sql .= ' ORDER BY full_name';
+
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+
+    $html = '';
+    foreach ($stmt->fetchAll() as $user) {
+        $label = $user['full_name'] . ' (' . ucwords(str_replace('_', ' ', (string) $user['role'])) . ')';
+        $isSelected = $selected === (int) $user['id'] ? ' selected' : '';
+        $html .= '<option value="' . (int) $user['id'] . '"' . $isSelected . '>' . h($label) . '</option>';
+    }
+
     return $html;
 }
 
