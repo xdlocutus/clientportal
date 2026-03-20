@@ -112,6 +112,8 @@ CREATE TABLE invoices (
     invoice_number VARCHAR(50) NOT NULL,
     invoice_date DATE NOT NULL,
     due_date DATE NOT NULL,
+    billing_type ENUM('once_off','recurring') NOT NULL DEFAULT 'once_off',
+    recurring_profile_id INT UNSIGNED DEFAULT NULL,
     status ENUM('draft','sent','unpaid','paid','overdue','cancelled') NOT NULL DEFAULT 'draft',
     notes TEXT DEFAULT NULL,
     subtotal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
@@ -123,7 +125,8 @@ CREATE TABLE invoices (
     CONSTRAINT fk_invoices_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE CASCADE,
     CONSTRAINT fk_invoices_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE,
     UNIQUE KEY uq_invoice_company_number (company_id, invoice_number),
-    KEY idx_invoices_company_client_status (company_id, client_id, status)
+    KEY idx_invoices_company_client_status (company_id, client_id, status),
+    KEY idx_invoices_billing_type (company_id, billing_type, invoice_date)
 ) ENGINE=InnoDB;
 
 CREATE TABLE invoice_items (
@@ -139,6 +142,52 @@ CREATE TABLE invoice_items (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_invoice_items_invoice FOREIGN KEY (invoice_id) REFERENCES invoices (id) ON DELETE CASCADE,
     KEY idx_invoice_items_invoice (invoice_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE invoice_payments (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id INT UNSIGNED NOT NULL,
+    client_id INT UNSIGNED NOT NULL,
+    invoice_id INT UNSIGNED NOT NULL,
+    payment_date DATE NOT NULL,
+    amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    reference VARCHAR(120) DEFAULT NULL,
+    notes TEXT DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_invoice_payments_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE CASCADE,
+    CONSTRAINT fk_invoice_payments_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE,
+    CONSTRAINT fk_invoice_payments_invoice FOREIGN KEY (invoice_id) REFERENCES invoices (id) ON DELETE CASCADE,
+    KEY idx_invoice_payments_invoice (invoice_id),
+    KEY idx_invoice_payments_client_date (company_id, client_id, payment_date)
+) ENGINE=InnoDB;
+
+CREATE TABLE recurring_billing_profiles (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id INT UNSIGNED NOT NULL,
+    client_id INT UNSIGNED NOT NULL,
+    service_id INT UNSIGNED DEFAULT NULL,
+    title VARCHAR(150) NOT NULL,
+    description TEXT DEFAULT NULL,
+    billing_cycle ENUM('weekly','monthly','quarterly','yearly') NOT NULL DEFAULT 'monthly',
+    quantity DECIMAL(12,2) NOT NULL DEFAULT 1.00,
+    unit_price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    tax_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    due_days INT NOT NULL DEFAULT 7,
+    start_date DATE NOT NULL,
+    next_invoice_date DATE NOT NULL,
+    end_date DATE DEFAULT NULL,
+    last_invoiced_at DATETIME DEFAULT NULL,
+    status ENUM('active','paused','completed') NOT NULL DEFAULT 'active',
+    notes TEXT DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_recurring_profiles_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE CASCADE,
+    CONSTRAINT fk_recurring_profiles_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE,
+    CONSTRAINT fk_recurring_profiles_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE SET NULL,
+    KEY idx_recurring_profiles_due (company_id, status, next_invoice_date),
+    KEY idx_recurring_profiles_client (company_id, client_id, status)
 ) ENGINE=InnoDB;
 
 CREATE TABLE tickets (

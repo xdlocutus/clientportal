@@ -6,6 +6,7 @@ require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once BASE_PATH . '/includes/auth.php';
 
 require_permission('invoices.edit');
+billing_system_ready();
 ensure_invoice_item_source_columns();
 ensure_invoice_item_description_capacity();
 $id = request_int('id');
@@ -43,13 +44,14 @@ if (is_post()) {
     $total = max(0, $subtotal + $taxAmount - $discountAmount);
     db()->beginTransaction();
     try {
-        $update = db()->prepare('UPDATE invoices SET company_id = :company_id, client_id = :client_id, invoice_date = :invoice_date, due_date = :due_date, status = :status, notes = :notes, subtotal = :subtotal, tax_amount = :tax_amount, discount_amount = :discount_amount, total_amount = :total_amount, updated_at = NOW() WHERE id = :id');
+        $update = db()->prepare('UPDATE invoices SET company_id = :company_id, client_id = :client_id, invoice_date = :invoice_date, due_date = :due_date, billing_type = :billing_type, status = :status, notes = :notes, subtotal = :subtotal, tax_amount = :tax_amount, discount_amount = :discount_amount, total_amount = :total_amount, updated_at = NOW() WHERE id = :id');
         $update->execute([
             'id' => $id,
             'company_id' => $companyId,
             'client_id' => request_int('client_id'),
             'invoice_date' => request_string('invoice_date'),
             'due_date' => request_string('due_date'),
+            'billing_type' => request_string('billing_type', (string) ($invoice['billing_type'] ?? 'once_off')) === 'recurring' ? 'recurring' : 'once_off',
             'status' => request_string('status'),
             'notes' => request_string('notes'),
             'subtotal' => $subtotal,
@@ -82,7 +84,7 @@ $pageTitle = 'Edit Quote';
 require BASE_PATH . '/includes/header.php';
 ?>
 <div class="card border-0 shadow-sm"><div class="card-body"><form method="post" data-invoice-form data-catalog='<?= h(json_encode($catalogItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?: '[]') ?>'><?= csrf_field() ?>
-<div class="row g-3 mb-3"><?php if (is_super_admin()): ?><div class="col-md-4"><label class="form-label">Tenant</label><select class="form-select" name="company_id" data-company-select required><?= company_select_options((int) $invoice['company_id']) ?></select></div><?php endif; ?><div class="col-md-4"><label class="form-label">Client</label><select class="form-select" name="client_id" data-client-select required><?= client_select_options((int) $invoice['client_id'], (int) $invoice['company_id']) ?></select></div><div class="col-md-2"><label class="form-label">Invoice Date</label><input class="form-control" type="date" name="invoice_date" value="<?= h($invoice['invoice_date']) ?>"></div><div class="col-md-2"><label class="form-label">Due Date</label><input class="form-control" type="date" name="due_date" value="<?= h($invoice['due_date']) ?>"></div><div class="col-md-3"><label class="form-label">Status</label><select class="form-select" name="status"><?php foreach (['draft','sent','unpaid','paid','overdue','cancelled'] as $status): ?><option value="<?= h($status) ?>" <?= $invoice['status'] === $status ? 'selected' : '' ?>><?= h(ucfirst($status)) ?></option><?php endforeach; ?></select></div></div>
+<div class="row g-3 mb-3"><?php if (is_super_admin()): ?><div class="col-md-4"><label class="form-label">Tenant</label><select class="form-select" name="company_id" data-company-select required><?= company_select_options((int) $invoice['company_id']) ?></select></div><?php endif; ?><div class="col-md-4"><label class="form-label">Client</label><select class="form-select" name="client_id" data-client-select required><?= client_select_options((int) $invoice['client_id'], (int) $invoice['company_id']) ?></select></div><div class="col-md-2"><label class="form-label">Invoice Date</label><input class="form-control" type="date" name="invoice_date" value="<?= h($invoice['invoice_date']) ?>"></div><div class="col-md-2"><label class="form-label">Due Date</label><input class="form-control" type="date" name="due_date" value="<?= h($invoice['due_date']) ?>"></div><div class="col-md-3"><label class="form-label">Billing Type</label><select class="form-select" name="billing_type"><option value="once_off" <?= (($invoice['billing_type'] ?? 'once_off') === 'once_off') ? 'selected' : '' ?>>Once-off</option><option value="recurring" <?= (($invoice['billing_type'] ?? '') === 'recurring') ? 'selected' : '' ?>>Recurring-generated</option></select></div><div class="col-md-3"><label class="form-label">Status</label><select class="form-select" name="status"><?php foreach (['draft','sent','unpaid','paid','overdue','cancelled'] as $status): ?><option value="<?= h($status) ?>" <?= $invoice['status'] === $status ? 'selected' : '' ?>><?= h(ucfirst($status)) ?></option><?php endforeach; ?></select></div></div>
 <h2 class="h5">Line Items</h2>
 <div class="d-flex flex-column gap-3" data-line-items>
 <?php $rows = max(3, count($items)); for ($i = 0; $i < $rows; $i++): $item = $items[$i] ?? ['description' => '', 'quantity' => '1', 'unit_price' => '', 'source_type' => 'manual', 'source_id' => null]; ?>

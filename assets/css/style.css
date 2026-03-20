@@ -257,6 +257,18 @@ a {
     color: var(--portal-text);
 }
 
+.billing-stat-card {
+    background:
+        linear-gradient(135deg, rgba(var(--portal-primary-rgb), 0.12), transparent),
+        var(--portal-surface);
+    border: 1px solid rgba(var(--portal-primary-rgb), 0.08);
+}
+
+.recurring-profile-card {
+    background: color-mix(in srgb, var(--portal-surface-strong) 84%, transparent);
+    border-color: var(--portal-border) !important;
+}
+
 .hero-panel,
 .surface-card,
 .card-stat,
