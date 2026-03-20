@@ -4,6 +4,199 @@ declare(strict_types=1);
 
 require_once BASE_PATH . '/includes/functions.php';
 
+function permission_catalog(): array
+{
+    return [
+        'clients.view' => [
+            'label' => 'View clients',
+            'description' => 'See the clients list and client records.',
+            'category' => 'Clients',
+        ],
+        'clients.manage' => [
+            'label' => 'Manage clients',
+            'description' => 'Create, edit, and delete clients.',
+            'category' => 'Clients',
+        ],
+        'services.view' => [
+            'label' => 'View services',
+            'description' => 'See services linked to company clients.',
+            'category' => 'Services',
+        ],
+        'services.manage' => [
+            'label' => 'Manage services',
+            'description' => 'Create, edit, and delete services.',
+            'category' => 'Services',
+        ],
+        'invoices.view' => [
+            'label' => 'View quotes & invoices',
+            'description' => 'Open the quotes/invoices list and detail pages.',
+            'category' => 'Quotes & invoices',
+        ],
+        'invoices.manage' => [
+            'label' => 'Manage quotes & invoices',
+            'description' => 'Create, edit, and delete quotes/invoices.',
+            'category' => 'Quotes & invoices',
+        ],
+        'tickets.view' => [
+            'label' => 'View tickets',
+            'description' => 'Open support tickets and conversations.',
+            'category' => 'Tickets',
+        ],
+        'tickets.manage' => [
+            'label' => 'Manage tickets',
+            'description' => 'Create tickets, reply, and close them.',
+            'category' => 'Tickets',
+        ],
+        'users.manage' => [
+            'label' => 'Manage users',
+            'description' => 'Create users and update team access.',
+            'category' => 'Administration',
+        ],
+        'settings.manage' => [
+            'label' => 'Manage settings',
+            'description' => 'Change company settings and invoice defaults.',
+            'category' => 'Administration',
+        ],
+    ];
+}
+
+function permission_groups(): array
+{
+    $groups = [];
+    foreach (permission_catalog() as $key => $permission) {
+        $groups[$permission['category']][$key] = $permission;
+    }
+
+    return $groups;
+}
+
+function default_permissions_for_role(string $role): array
+{
+    return match ($role) {
+        'super_admin', 'company_admin' => array_keys(permission_catalog()),
+        'company_staff' => ['invoices.view', 'invoices.manage'],
+        'client' => ['invoices.view', 'tickets.view', 'tickets.manage'],
+        default => [],
+    };
+}
+
+function normalize_permissions(array $permissions): array
+{
+    $catalog = permission_catalog();
+    $normalized = [];
+
+    foreach ($permissions as $permission) {
+        $permission = (string) $permission;
+        if (isset($catalog[$permission])) {
+            $normalized[] = $permission;
+        }
+    }
+
+    $normalized = array_values(array_unique($normalized));
+    sort($normalized);
+
+    return $normalized;
+}
+
+function permissions_storage_available(): bool
+{
+    static $checked = false;
+    static $available = false;
+
+    if ($checked) {
+        return $available;
+    }
+
+    $checked = true;
+
+    try {
+        db()->query('SELECT 1 FROM user_permissions LIMIT 1');
+        $available = true;
+        return true;
+    } catch (PDOException) {
+        try {
+            db()->exec(
+                'CREATE TABLE IF NOT EXISTS user_permissions (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT UNSIGNED NOT NULL,
+                    permission_key VARCHAR(120) NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_user_permissions_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                    UNIQUE KEY uq_user_permission (user_id, permission_key),
+                    KEY idx_user_permissions_key (permission_key)
+                ) ENGINE=InnoDB'
+            );
+            $available = true;
+        } catch (PDOException) {
+            $available = false;
+        }
+    }
+
+    return $available;
+}
+
+function load_user_permissions(array $user): array
+{
+    if (in_array($user['role'], ['super_admin', 'company_admin'], true)) {
+        return default_permissions_for_role($user['role']);
+    }
+
+    if (!permissions_storage_available()) {
+        return default_permissions_for_role($user['role']);
+    }
+
+    $stmt = db()->prepare('SELECT permission_key FROM user_permissions WHERE user_id = :user_id ORDER BY permission_key');
+    $stmt->execute(['user_id' => (int) $user['id']]);
+
+    return normalize_permissions($stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+}
+
+function sync_user_permissions(int $userId, string $role, array $permissions): array
+{
+    $permissions = in_array($role, ['super_admin', 'company_admin'], true)
+        ? default_permissions_for_role($role)
+        : normalize_permissions($permissions);
+
+    if (!permissions_storage_available()) {
+        return $permissions;
+    }
+
+    $delete = db()->prepare('DELETE FROM user_permissions WHERE user_id = :user_id');
+    $delete->execute(['user_id' => $userId]);
+
+    if ($permissions !== []) {
+        $insert = db()->prepare('INSERT INTO user_permissions (user_id, permission_key, created_at, updated_at) VALUES (:user_id, :permission_key, NOW(), NOW())');
+        foreach ($permissions as $permission) {
+            $insert->execute([
+                'user_id' => $userId,
+                'permission_key' => $permission,
+            ]);
+        }
+    }
+
+    return $permissions;
+}
+
+function permissions_summary(array $permissions): string
+{
+    $permissions = normalize_permissions($permissions);
+    if ($permissions === []) {
+        return 'No extra permissions';
+    }
+
+    if (count($permissions) === count(permission_catalog())) {
+        return 'Full access';
+    }
+
+    $labels = [];
+    foreach ($permissions as $permission) {
+        $labels[] = permission_catalog()[$permission]['label'];
+    }
+
+    return implode(', ', $labels);
+}
+
 function current_user(): ?array
 {
     return $_SESSION['user'] ?? null;
@@ -22,6 +215,14 @@ function current_company_id(): ?int
 function current_client_id(): ?int
 {
     return isset($_SESSION['user']['client_id']) ? (int) $_SESSION['user']['client_id'] : null;
+}
+
+function current_user_permissions(): array
+{
+    $user = current_user();
+    return isset($user['permissions']) && is_array($user['permissions'])
+        ? normalize_permissions($user['permissions'])
+        : [];
 }
 
 function is_logged_in(): bool
@@ -60,6 +261,35 @@ function is_client_role(): bool
     return has_role('client');
 }
 
+function has_permission(string|array $permissions): bool
+{
+    if (!is_logged_in()) {
+        return false;
+    }
+
+    if (is_super_admin() || is_company_admin()) {
+        return true;
+    }
+
+    $granted = current_user_permissions();
+    foreach ((array) $permissions as $permission) {
+        if (in_array($permission, $granted, true)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function require_permission(string|array $permissions, string $message = 'You do not have permission to access that area.'): void
+{
+    require_login();
+    if (!has_permission($permissions)) {
+        set_flash('danger', $message);
+        redirect('/modules/dashboard/index.php');
+    }
+}
+
 function login_user(array $user): void
 {
     session_regenerate_id(true);
@@ -70,6 +300,7 @@ function login_user(array $user): void
         'full_name' => $user['full_name'],
         'email' => $user['email'],
         'role' => $user['role'],
+        'permissions' => load_user_permissions($user),
     ];
 }
 
