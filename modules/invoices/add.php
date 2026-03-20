@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once BASE_PATH . '/includes/auth.php';
 
-require_permission('invoices.manage');
+require_permission('invoices.create');
 if (is_post()) {
     verify_csrf();
     $companyId = is_super_admin() ? request_int('company_id') : (int) current_company_id();

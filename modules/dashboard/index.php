@@ -73,16 +73,16 @@ require BASE_PATH . '/includes/header.php';
             <p class="mb-0 text-body-secondary">Track only the areas this user can access, so each team member sees a focused workspace.</p>
         </div>
         <div class="quick-actions">
-            <?php if (has_permission('clients.manage')): ?>
+            <?php if (has_permission('clients.create')): ?>
                 <a class="btn btn-primary" href="/modules/clients/add.php">Add client</a>
             <?php endif; ?>
-            <?php if (has_permission('services.manage')): ?>
+            <?php if (has_permission('services.create')): ?>
                 <a class="btn btn-outline-secondary" href="/modules/services/add.php">Add service</a>
             <?php endif; ?>
-            <?php if (has_permission('invoices.manage')): ?>
+            <?php if (has_permission('invoices.create')): ?>
                 <a class="btn btn-outline-secondary" href="/modules/invoices/add.php">Create quote</a>
             <?php endif; ?>
-            <?php if (has_permission('tickets.manage')): ?>
+            <?php if (has_permission('tickets.create')): ?>
                 <a class="btn btn-outline-secondary" href="/modules/tickets/add.php">Open ticket</a>
             <?php endif; ?>
         </div>

@@ -12,9 +12,19 @@ function permission_catalog(): array
             'description' => 'See the clients list and client records.',
             'category' => 'Clients',
         ],
-        'clients.manage' => [
-            'label' => 'Manage clients',
-            'description' => 'Create, edit, and delete clients.',
+        'clients.create' => [
+            'label' => 'Create clients',
+            'description' => 'Add new client records.',
+            'category' => 'Clients',
+        ],
+        'clients.edit' => [
+            'label' => 'Edit clients',
+            'description' => 'Update existing client records.',
+            'category' => 'Clients',
+        ],
+        'clients.delete' => [
+            'label' => 'Delete clients',
+            'description' => 'Remove client records.',
             'category' => 'Clients',
         ],
         'services.view' => [
@@ -22,9 +32,19 @@ function permission_catalog(): array
             'description' => 'See services linked to company clients.',
             'category' => 'Services',
         ],
-        'services.manage' => [
-            'label' => 'Manage services',
-            'description' => 'Create, edit, and delete services.',
+        'services.create' => [
+            'label' => 'Create services',
+            'description' => 'Add new services.',
+            'category' => 'Services',
+        ],
+        'services.edit' => [
+            'label' => 'Edit services',
+            'description' => 'Update existing services.',
+            'category' => 'Services',
+        ],
+        'services.delete' => [
+            'label' => 'Delete services',
+            'description' => 'Remove services.',
             'category' => 'Services',
         ],
         'invoices.view' => [
@@ -32,9 +52,19 @@ function permission_catalog(): array
             'description' => 'Open the quotes/invoices list and detail pages.',
             'category' => 'Quotes & invoices',
         ],
-        'invoices.manage' => [
-            'label' => 'Manage quotes & invoices',
-            'description' => 'Create, edit, and delete quotes/invoices.',
+        'invoices.create' => [
+            'label' => 'Create quotes & invoices',
+            'description' => 'Create new quotes/invoices.',
+            'category' => 'Quotes & invoices',
+        ],
+        'invoices.edit' => [
+            'label' => 'Edit quotes & invoices',
+            'description' => 'Update existing quotes/invoices.',
+            'category' => 'Quotes & invoices',
+        ],
+        'invoices.delete' => [
+            'label' => 'Delete quotes & invoices',
+            'description' => 'Remove quotes/invoices.',
             'category' => 'Quotes & invoices',
         ],
         'tickets.view' => [
@@ -42,9 +72,19 @@ function permission_catalog(): array
             'description' => 'Open support tickets and conversations.',
             'category' => 'Tickets',
         ],
-        'tickets.manage' => [
-            'label' => 'Manage tickets',
-            'description' => 'Create tickets, reply, and close them.',
+        'tickets.create' => [
+            'label' => 'Create tickets',
+            'description' => 'Open new support tickets.',
+            'category' => 'Tickets',
+        ],
+        'tickets.reply' => [
+            'label' => 'Reply to tickets',
+            'description' => 'Post replies in ticket conversations.',
+            'category' => 'Tickets',
+        ],
+        'tickets.close' => [
+            'label' => 'Close tickets',
+            'description' => 'Close open tickets.',
             'category' => 'Tickets',
         ],
         'users.manage' => [
@@ -74,8 +114,8 @@ function default_permissions_for_role(string $role): array
 {
     return match ($role) {
         'super_admin', 'company_admin' => array_keys(permission_catalog()),
-        'company_staff' => ['invoices.view', 'invoices.manage'],
-        'client' => ['invoices.view', 'tickets.view', 'tickets.manage'],
+        'company_staff' => ['invoices.view', 'invoices.create', 'invoices.edit', 'invoices.delete'],
+        'client' => ['invoices.view', 'tickets.view', 'tickets.create', 'tickets.reply'],
         default => [],
     };
 }

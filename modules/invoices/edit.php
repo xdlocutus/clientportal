@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once BASE_PATH . '/includes/auth.php';
 
-require_permission('invoices.manage');
+require_permission('invoices.edit');
 $id = request_int('id');
 $stmt = db()->prepare('SELECT * FROM invoices WHERE id = :id AND ' . (is_super_admin() ? '1=1' : 'company_id = :company_id'));
 $stmt->execute(['id' => $id] + company_scope_params());

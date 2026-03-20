@@ -79,7 +79,7 @@ require BASE_PATH . '/includes/header.php';
     <div class="col-12">
         <div class="border rounded-3 p-3 bg-body-tertiary">
             <h2 class="h5 mb-1">Permissions</h2>
-            <p class="text-body-secondary mb-3">Update the exact features this user can access. This makes it easy to start a sales user with quotes/invoices only and later turn on client management when needed.</p>
+            <p class="text-body-secondary mb-3">Update the exact features and actions this user can access. This makes it easy to start a sales user with quotes/invoices only and later turn on client create, edit, or delete access when needed.</p>
             <div class="row g-3">
                 <?php foreach ($permissionGroups as $group => $permissions): ?>
                     <div class="col-lg-6">

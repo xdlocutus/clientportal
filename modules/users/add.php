@@ -58,7 +58,7 @@ require BASE_PATH . '/includes/header.php';
             <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                 <div>
                     <h2 class="h5 mb-1">Permissions</h2>
-                    <p class="text-body-secondary mb-0">Choose what this user can access. Company admins and super admins always receive full access. Company staff defaults to quotes/invoices only, so you can later enable clients or other areas as needed.</p>
+                    <p class="text-body-secondary mb-0">Choose exactly what this user can access. Company admins and super admins always receive full access. Company staff defaults to quotes/invoices only, and you can separately enable create, edit, delete, reply, or close actions as needed.</p>
                 </div>
             </div>
             <div class="row g-3">
