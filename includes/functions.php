@@ -165,7 +165,7 @@ function dashboard_widget_catalog(): array
         ],
         'stats.unpaid_invoices' => [
             'label' => 'Open invoices',
-            'description' => 'Show the number of draft, sent, unpaid, and overdue invoices.',
+            'description' => 'Show the number of unpaid and overdue invoices.',
             'group' => 'Stat cards',
             'permission' => 'invoices.view',
         ],
@@ -177,7 +177,7 @@ function dashboard_widget_catalog(): array
         ],
         'panel.recent_invoices' => [
             'label' => 'Recent invoices',
-            'description' => 'List the latest quotes and invoices.',
+            'description' => 'List the latest invoices only.',
             'group' => 'Insight panels',
             'permission' => 'invoices.view',
         ],
@@ -1041,6 +1041,26 @@ function format_billing_type(string $billingType): string
     };
 }
 
+function quote_statuses(): array
+{
+    return ['draft', 'sent'];
+}
+
+function invoice_statuses(): array
+{
+    return ['unpaid', 'paid', 'overdue', 'cancelled'];
+}
+
+function invoice_is_quote(array $invoice): bool
+{
+    return in_array((string) ($invoice['status'] ?? ''), quote_statuses(), true);
+}
+
+function invoice_is_billing_record(array $invoice): bool
+{
+    return in_array((string) ($invoice['status'] ?? ''), invoice_statuses(), true);
+}
+
 function billing_cycle_label(string $cycle): string
 {
     return match ($cycle) {
@@ -1117,7 +1137,7 @@ function sync_invoice_payment_status(int $invoiceId): void
     $stmt->execute(['id' => $invoiceId]);
     $invoice = $stmt->fetch();
 
-    if (!$invoice || in_array($invoice['status'], ['draft', 'cancelled'], true)) {
+    if (!$invoice || invoice_is_quote($invoice) || $invoice['status'] === 'cancelled') {
         return;
     }
 
@@ -1300,8 +1320,7 @@ function statement_entries(?int $companyId = null, ?int $clientId = null): array
                           invoices.total_amount AS amount, invoices.notes, invoices.billing_type, clients.company_name
                    FROM invoices
                    INNER JOIN clients ON clients.id = invoices.client_id
-                   WHERE invoices.status <> :cancelled';
-    $params['cancelled'] = 'cancelled';
+                   WHERE invoices.status IN ("unpaid", "paid", "overdue", "cancelled")';
 
     if ($companyId !== null && $companyId > 0) {
         $invoiceSql .= ' AND invoices.company_id = :company_id';
