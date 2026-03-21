@@ -20,7 +20,7 @@ if (dashboard_widget_enabled('stats.products') && products_storage_available()) 
     $metricQueries['products'] = 'SELECT COUNT(*) FROM products WHERE ' . company_scope_sql();
 }
 if (dashboard_widget_enabled('stats.unpaid_invoices')) {
-    $metricQueries['unpaid_invoices'] = "SELECT COUNT(*) FROM invoices WHERE " . company_scope_sql() . " AND status IN ('draft','sent','unpaid','overdue')";
+    $metricQueries['unpaid_invoices'] = "SELECT COUNT(*) FROM invoices WHERE " . company_scope_sql() . " AND status IN ('unpaid','overdue')";
 }
 if (dashboard_widget_enabled('stats.open_tickets')) {
     $metricQueries['open_tickets'] = "SELECT COUNT(*) FROM tickets WHERE " . company_scope_sql() . " AND status = 'open'";
@@ -44,7 +44,7 @@ if (dashboard_widget_enabled('panel.recent_invoices')) {
         $invoiceSql .= ' AND invoices.client_id = :client_id';
         $invoiceParams['client_id'] = current_client_id();
     }
-    $invoiceSql .= ' ORDER BY invoices.created_at DESC LIMIT 5';
+    $invoiceSql .= " AND invoices.status IN ('unpaid', 'paid', 'overdue', 'cancelled') ORDER BY invoices.created_at DESC LIMIT 5";
     $invoiceStmt = db()->prepare($invoiceSql);
     $invoiceStmt->execute($invoiceParams);
     $recentInvoices = $invoiceStmt->fetchAll();
@@ -166,7 +166,7 @@ require BASE_PATH . '/includes/header.php';
             <div class="col-md-6 col-xl-3"><div class="card card-stat"><div class="card-body"><div class="stat-label">Products</div><div class="d-flex align-items-end justify-content-between gap-3"><div class="display-6 mb-0"><?= $counts['products'] ?></div><span class="stat-icon">⬡</span></div></div></div></div>
         <?php endif; ?>
         <?php if (isset($counts['unpaid_invoices'])): ?>
-            <div class="col-md-6 col-xl-3"><div class="card card-stat"><div class="card-body"><div class="stat-label">Open Quotes & Invoices</div><div class="d-flex align-items-end justify-content-between gap-3"><div class="display-6 mb-0"><?= $counts['unpaid_invoices'] ?></div><span class="stat-icon">◩</span></div></div></div></div>
+            <div class="col-md-6 col-xl-3"><div class="card card-stat"><div class="card-body"><div class="stat-label">Open Invoices</div><div class="d-flex align-items-end justify-content-between gap-3"><div class="display-6 mb-0"><?= $counts['unpaid_invoices'] ?></div><span class="stat-icon">◩</span></div></div></div></div>
         <?php endif; ?>
         <?php if (isset($counts['open_tickets'])): ?>
             <div class="col-md-6 col-xl-3"><div class="card card-stat"><div class="card-body"><div class="stat-label">Open Tickets</div><div class="d-flex align-items-end justify-content-between gap-3"><div class="display-6 mb-0"><?= $counts['open_tickets'] ?></div><span class="stat-icon">✉</span></div></div></div></div>
@@ -182,7 +182,7 @@ require BASE_PATH . '/includes/header.php';
     <?php if (dashboard_widget_enabled('panel.recent_invoices')): ?>
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm surface-card h-100">
-                <div class="card-header bg-transparent border-0 pt-4 px-4"><strong>Recent Quotes & Invoices</strong></div>
+                <div class="card-header bg-transparent border-0 pt-4 px-4"><strong>Recent Invoices</strong></div>
                 <div class="table-responsive">
                     <table class="table table-striped mb-0">
                         <thead><tr><th>#</th><th>Client</th><th>Total</th><th>Status</th></tr></thead>
@@ -195,7 +195,7 @@ require BASE_PATH . '/includes/header.php';
                                 <td><?= invoice_status_badge($invoice['status']) ?></td>
                             </tr>
                         <?php endforeach; ?>
-                        <?php if (!$recentInvoices): ?><tr><td colspan="4" class="text-center text-muted">No quotes or invoices found.</td></tr><?php endif; ?>
+                        <?php if (!$recentInvoices): ?><tr><td colspan="4" class="text-center text-muted">No invoices found.</td></tr><?php endif; ?>
                         </tbody>
                     </table>
                 </div>

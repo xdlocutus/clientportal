@@ -10,6 +10,12 @@ billing_system_ready();
 ensure_invoice_item_source_columns();
 ensure_invoice_item_description_capacity();
 $catalogItems = invoice_catalog_items();
+$mode = request_string('mode') === 'invoice' ? 'invoice' : 'quote';
+$statusOptions = $mode === 'invoice' ? ['unpaid', 'paid', 'overdue', 'cancelled'] : quote_statuses();
+$pageTitle = $mode === 'invoice' ? 'Create Invoice' : 'Create Quote';
+$successMessage = $mode === 'invoice' ? 'Invoice created successfully.' : 'Quote created successfully.';
+$submitLabel = $mode === 'invoice' ? 'Save Invoice' : 'Save Quote';
+$cancelUrl = $mode === 'invoice' ? '/modules/billing/index.php' : '/modules/invoices/index.php';
 if (is_post()) {
     verify_csrf();
     $companyId = is_super_admin() ? request_int('company_id') : (int) current_company_id();
@@ -42,7 +48,7 @@ if (is_post()) {
             'invoice_date' => request_string('invoice_date') ?: date('Y-m-d'),
             'due_date' => request_string('due_date') ?: date('Y-m-d'),
             'billing_type' => request_string('billing_type', 'once_off') === 'recurring' ? 'recurring' : 'once_off',
-            'status' => request_string('status', 'draft'),
+            'status' => in_array(request_string('status', $statusOptions[0]), $statusOptions, true) ? request_string('status', $statusOptions[0]) : $statusOptions[0],
             'notes' => request_string('notes'),
             'subtotal' => $subtotal,
             'tax_amount' => $taxAmount,
@@ -63,18 +69,18 @@ if (is_post()) {
             $itemStmt->execute($params);
         }
         db()->commit();
-        set_flash('success', 'Invoice created successfully.');
+        set_flash('success', $successMessage);
         redirect('/modules/invoices/view.php?id=' . $invoiceId);
     } catch (Throwable $exception) {
         db()->rollBack();
         throw $exception;
     }
 }
-$pageTitle = 'Create Quote';
 require BASE_PATH . '/includes/header.php';
 ?>
 <div class="card border-0 shadow-sm"><div class="card-body"><form method="post" data-invoice-form data-catalog='<?= h(json_encode($catalogItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?: '[]') ?>'><?= csrf_field() ?>
-<div class="row g-3 mb-3"><?php if (is_super_admin()): ?><div class="col-md-4"><label class="form-label">Tenant</label><select class="form-select" name="company_id" data-company-select required><option value="">Select company</option><?= company_select_options() ?></select></div><?php endif; ?><div class="col-md-4"><label class="form-label">Client</label><select class="form-select" name="client_id" data-client-select required><option value="">Select client</option><?= client_select_options() ?></select></div><div class="col-md-2"><label class="form-label">Invoice Date</label><input class="form-control" type="date" name="invoice_date" value="<?= date('Y-m-d') ?>"></div><div class="col-md-2"><label class="form-label">Due Date</label><input class="form-control" type="date" name="due_date" value="<?= date('Y-m-d') ?>"></div><div class="col-md-3"><label class="form-label">Billing Type</label><select class="form-select" name="billing_type"><option value="once_off">Once-off</option><option value="recurring">Recurring-generated</option></select></div><div class="col-md-3"><label class="form-label">Status</label><select class="form-select" name="status"><?php foreach (['draft','sent','unpaid','paid','overdue','cancelled'] as $status): ?><option value="<?= h($status) ?>"><?= h(ucfirst($status)) ?></option><?php endforeach; ?></select></div></div>
+<input type="hidden" name="mode" value="<?= h($mode) ?>">
+<div class="row g-3 mb-3"><?php if (is_super_admin()): ?><div class="col-md-4"><label class="form-label">Tenant</label><select class="form-select" name="company_id" data-company-select required><option value="">Select company</option><?= company_select_options() ?></select></div><?php endif; ?><div class="col-md-4"><label class="form-label">Client</label><select class="form-select" name="client_id" data-client-select required><option value="">Select client</option><?= client_select_options() ?></select></div><div class="col-md-2"><label class="form-label"><?= $mode === 'invoice' ? 'Invoice Date' : 'Quote Date' ?></label><input class="form-control" type="date" name="invoice_date" value="<?= date('Y-m-d') ?>"></div><div class="col-md-2"><label class="form-label"><?= $mode === 'invoice' ? 'Due Date' : 'Valid Until' ?></label><input class="form-control" type="date" name="due_date" value="<?= date('Y-m-d') ?>"></div><div class="col-md-3"><label class="form-label">Billing Type</label><select class="form-select" name="billing_type"><option value="once_off">Once-off</option><option value="recurring">Recurring-generated</option></select></div><div class="col-md-3"><label class="form-label"><?= $mode === 'invoice' ? 'Invoice Status' : 'Quote Status' ?></label><select class="form-select" name="status"><?php foreach ($statusOptions as $status): ?><option value="<?= h($status) ?>"><?= h(ucfirst($status)) ?></option><?php endforeach; ?></select></div></div>
 <h2 class="h5">Line Items</h2>
 <div class="d-flex flex-column gap-3" data-line-items>
 <?php for ($i = 0; $i < 3; $i++): ?>
@@ -99,6 +105,6 @@ require BASE_PATH . '/includes/header.php';
         </div>
     </div>
 </template>
-<div class="row g-3 mt-3"><div class="col-md-3"><label class="form-label">Tax</label><input class="form-control" type="number" step="0.01" name="tax_amount" value="0"></div><div class="col-md-3"><label class="form-label">Discount</label><input class="form-control" type="number" step="0.01" name="discount_amount" value="0"></div><div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" name="notes" rows="4"></textarea></div><div class="col-12"><button class="btn btn-primary"><?php echo 'Save Quote'; ?></button> <a class="btn btn-link" href="/modules/invoices/index.php">Cancel</a></div></div>
+<div class="row g-3 mt-3"><div class="col-md-3"><label class="form-label">Tax</label><input class="form-control" type="number" step="0.01" name="tax_amount" value="0"></div><div class="col-md-3"><label class="form-label">Discount</label><input class="form-control" type="number" step="0.01" name="discount_amount" value="0"></div><div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" name="notes" rows="4"></textarea></div><div class="col-12"><button class="btn btn-primary"><?= h($submitLabel) ?></button> <a class="btn btn-link" href="<?= h($cancelUrl) ?>">Cancel</a></div></div>
 </form></div></div>
 <?php require BASE_PATH . '/includes/footer.php'; ?>

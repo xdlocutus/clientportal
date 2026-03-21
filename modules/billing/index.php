@@ -139,7 +139,7 @@ $filterInvoicesSql = 'SELECT invoices.*, clients.company_name,
                              COALESCE((SELECT SUM(amount) FROM invoice_payments WHERE invoice_id = invoices.id), 0) AS paid_amount
                       FROM invoices
                       INNER JOIN clients ON clients.id = invoices.client_id
-                      WHERE ' . company_scope_sql('company_id', 'invoices');
+                      WHERE ' . company_scope_sql('company_id', 'invoices') . " AND invoices.status IN ('unpaid', 'paid', 'overdue', 'cancelled')";
 $filterParams += company_scope_params();
 
 if ($selectedCompanyId > 0 && is_super_admin()) {
@@ -147,7 +147,7 @@ if ($selectedCompanyId > 0 && is_super_admin()) {
                                  COALESCE((SELECT SUM(amount) FROM invoice_payments WHERE invoice_id = invoices.id), 0) AS paid_amount
                           FROM invoices
                           INNER JOIN clients ON clients.id = invoices.client_id
-                          WHERE invoices.company_id = :company_id';
+                          WHERE invoices.company_id = :company_id AND invoices.status IN ("unpaid", "paid", "overdue", "cancelled")';
     $filterParams = ['company_id' => $selectedCompanyId];
 }
 if ($selectedClientId > 0) {
@@ -210,9 +210,9 @@ require BASE_PATH . '/includes/header.php';
     </div>
     <div class="d-flex gap-2">
         <?php if (has_permission('invoices.create')): ?>
-            <a class="btn btn-primary" href="/modules/invoices/add.php">Create once-off invoice</a>
+            <a class="btn btn-primary" href="/modules/invoices/add.php?mode=invoice">Create once-off invoice</a>
         <?php endif; ?>
-        <a class="btn btn-outline-secondary" href="/modules/invoices/index.php">Open invoice list</a>
+        <a class="btn btn-outline-secondary" href="/modules/invoices/index.php">Open quotes</a>
     </div>
 </div>
 

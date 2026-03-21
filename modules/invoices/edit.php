@@ -16,6 +16,10 @@ $invoice = $stmt->fetch();
 if (!$invoice) {
     redirect('/modules/invoices/index.php');
 }
+if (!invoice_is_quote($invoice)) {
+    set_flash('danger', 'Invoices are managed from the Billing Centre.');
+    redirect('/modules/billing/index.php');
+}
 $withSourceColumns = ensure_invoice_item_source_columns();
 $itemSql = $withSourceColumns
     ? 'SELECT * FROM invoice_items WHERE invoice_id = :invoice_id ORDER BY id'
@@ -52,7 +56,7 @@ if (is_post()) {
             'invoice_date' => request_string('invoice_date'),
             'due_date' => request_string('due_date'),
             'billing_type' => request_string('billing_type', (string) ($invoice['billing_type'] ?? 'once_off')) === 'recurring' ? 'recurring' : 'once_off',
-            'status' => request_string('status'),
+            'status' => in_array(request_string('status', (string) $invoice['status']), quote_statuses(), true) ? request_string('status', (string) $invoice['status']) : 'draft',
             'notes' => request_string('notes'),
             'subtotal' => $subtotal,
             'tax_amount' => $taxAmount,
@@ -73,7 +77,7 @@ if (is_post()) {
             $insertItem->execute($params);
         }
         db()->commit();
-        set_flash('success', 'Invoice updated successfully.');
+        set_flash('success', 'Quote updated successfully.');
         redirect('/modules/invoices/view.php?id=' . $id);
     } catch (Throwable $exception) {
         db()->rollBack();
@@ -84,7 +88,7 @@ $pageTitle = 'Edit Quote';
 require BASE_PATH . '/includes/header.php';
 ?>
 <div class="card border-0 shadow-sm"><div class="card-body"><form method="post" data-invoice-form data-catalog='<?= h(json_encode($catalogItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?: '[]') ?>'><?= csrf_field() ?>
-<div class="row g-3 mb-3"><?php if (is_super_admin()): ?><div class="col-md-4"><label class="form-label">Tenant</label><select class="form-select" name="company_id" data-company-select required><?= company_select_options((int) $invoice['company_id']) ?></select></div><?php endif; ?><div class="col-md-4"><label class="form-label">Client</label><select class="form-select" name="client_id" data-client-select required><?= client_select_options((int) $invoice['client_id'], (int) $invoice['company_id']) ?></select></div><div class="col-md-2"><label class="form-label">Invoice Date</label><input class="form-control" type="date" name="invoice_date" value="<?= h($invoice['invoice_date']) ?>"></div><div class="col-md-2"><label class="form-label">Due Date</label><input class="form-control" type="date" name="due_date" value="<?= h($invoice['due_date']) ?>"></div><div class="col-md-3"><label class="form-label">Billing Type</label><select class="form-select" name="billing_type"><option value="once_off" <?= (($invoice['billing_type'] ?? 'once_off') === 'once_off') ? 'selected' : '' ?>>Once-off</option><option value="recurring" <?= (($invoice['billing_type'] ?? '') === 'recurring') ? 'selected' : '' ?>>Recurring-generated</option></select></div><div class="col-md-3"><label class="form-label">Status</label><select class="form-select" name="status"><?php foreach (['draft','sent','unpaid','paid','overdue','cancelled'] as $status): ?><option value="<?= h($status) ?>" <?= $invoice['status'] === $status ? 'selected' : '' ?>><?= h(ucfirst($status)) ?></option><?php endforeach; ?></select></div></div>
+<div class="row g-3 mb-3"><?php if (is_super_admin()): ?><div class="col-md-4"><label class="form-label">Tenant</label><select class="form-select" name="company_id" data-company-select required><?= company_select_options((int) $invoice['company_id']) ?></select></div><?php endif; ?><div class="col-md-4"><label class="form-label">Client</label><select class="form-select" name="client_id" data-client-select required><?= client_select_options((int) $invoice['client_id'], (int) $invoice['company_id']) ?></select></div><div class="col-md-2"><label class="form-label">Quote Date</label><input class="form-control" type="date" name="invoice_date" value="<?= h($invoice['invoice_date']) ?>"></div><div class="col-md-2"><label class="form-label">Valid Until</label><input class="form-control" type="date" name="due_date" value="<?= h($invoice['due_date']) ?>"></div><div class="col-md-3"><label class="form-label">Billing Type</label><select class="form-select" name="billing_type"><option value="once_off" <?= (($invoice['billing_type'] ?? 'once_off') === 'once_off') ? 'selected' : '' ?>>Once-off</option><option value="recurring" <?= (($invoice['billing_type'] ?? '') === 'recurring') ? 'selected' : '' ?>>Recurring-generated</option></select></div><div class="col-md-3"><label class="form-label">Quote Status</label><select class="form-select" name="status"><?php foreach (quote_statuses() as $status): ?><option value="<?= h($status) ?>" <?= $invoice['status'] === $status ? 'selected' : '' ?>><?= h(ucfirst($status)) ?></option><?php endforeach; ?></select></div></div>
 <h2 class="h5">Line Items</h2>
 <div class="d-flex flex-column gap-3" data-line-items>
 <?php $rows = max(3, count($items)); for ($i = 0; $i < $rows; $i++): $item = $items[$i] ?? ['description' => '', 'quantity' => '1', 'unit_price' => '', 'source_type' => 'manual', 'source_id' => null]; ?>
